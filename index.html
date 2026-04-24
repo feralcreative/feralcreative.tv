@@ -28,17 +28,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Feral Cats">
 
-    <link rel="stylesheet" href="./styles/css/main.css">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260213">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
 
     <!-- Google Sign-In API -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Configuration and Auth -->
-    <script src="./config.js"></script>
-    <script src="./auth.js"></script>
+    <script src="./config.js?v=2"></script>
+    <script src="./auth.js?v=2"></script>
 
     <!-- WHEP Client for WebRTC -->
     <script src="https://cdn.jsdelivr.net/npm/@eyevinn/whep-web-client@1.0.0/dist/whep-web-client.min.js"></script>
@@ -132,7 +132,7 @@
             <!-- OTHER Camera -->
             <div class="camera-container">
                 <div class="camera-header">
-                    <h2>OTHER</h2>
+                    <h2>CENTER</h2>
                     <span class="status" id="status-other">Connecting...</span>
                 </div>
                 <div class="video-wrapper">
@@ -153,7 +153,33 @@
         </footer>
     </div>
 
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="camera-modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-header">
+                <h2 id="modal-camera-name"></h2>
+                <span class="status" id="modal-status">Connecting...</span>
+            </div>
+            <div class="modal-video-wrapper">
+                <video id="modal-video" autoplay muted playsinline></video>
+                <div class="loading" id="modal-loading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="error" id="modal-error" style="display: none;">
+                    <p>Connection failed</p>
+                    <button onclick="reconnectModal()">Retry</button>
+                </div>
+            </div>
+
+            <!-- ONVIF controls will be inserted here by onvif-controls.js -->
+            <div id="modal-controls-container"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="./app.js?v=3"></script>
+    <script src="./app.js?v=5"></script>
+    <script src="./onvif-controls.js?v=4"></script>
 </body>
 </html>

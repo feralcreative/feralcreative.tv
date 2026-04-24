@@ -16,6 +16,19 @@ services:
     networks:
       - cats-network
 
+  # ONVIF Backend - Camera control proxy
+  backend:
+    image: cats-backend:latest
+    container_name: cats-backend
+    restart: unless-stopped
+    environment:
+      - CAMERA_USER=feralcreative
+      - CAMERA_PASS=@NhMM-r*nM_H@hjWeAMZt8j
+    ports:
+      - "3001:3001"
+    networks:
+      - cats-network
+
   # Nginx - Serve static frontend
   web:
     image: cats:latest
@@ -27,6 +40,7 @@ services:
       - cats-network
     depends_on:
       - mediamtx
+      - backend
 
 networks:
   cats-network:

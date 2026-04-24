@@ -1,0 +1,189 @@
+// ONVIF Camera Controls Styles
+@use "../abstracts/variables" as *;
+
+.onvif-toggle {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, rgba(204, 0, 204, 0.8), rgba(136, 0, 136, 0.8));
+  color: white;
+  border: 2px solid rgba(204, 0, 204, 0.6);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 10;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(204, 0, 204, 0.3);
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(204, 0, 204, 0.9), rgba(170, 0, 170, 0.9));
+    border-color: rgba(220, 50, 220, 0.8);
+    box-shadow: 0 6px 16px rgba(204, 0, 204, 0.5);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(204, 0, 204, 0.3);
+  }
+}
+
+.onvif-controls {
+  position: absolute;
+  bottom: 100%;
+  right: 10px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 45, 0.95));
+  border: 2px solid rgba(204, 0, 204, 0.4);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 20;
+  min-width: 220px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(204, 0, 204, 0.2);
+  backdrop-filter: blur(8px);
+
+  .onvif-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    min-height: 24px;
+
+    .onvif-title {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .onvif-close {
+      position: absolute;
+      right: 0;
+      top: 0;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      line-height: 1;
+
+      &:hover {
+        color: #ff4444;
+      }
+    }
+  }
+
+  .ptz-controls {
+    .ptz-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+
+      .ptz-btn {
+        background: linear-gradient(135deg, rgba(68, 0, 68, 0.6), rgba(40, 0, 40, 0.6));
+        border: 2px solid rgba(204, 0, 204, 0.3);
+        color: white;
+        padding: 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 20px;
+        transition: all 0.2s ease;
+        user-select: none;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+
+        &:hover {
+          background: linear-gradient(135deg, rgba(136, 0, 136, 0.8), rgba(102, 0, 102, 0.8));
+          border-color: rgba(220, 50, 220, 0.6);
+          box-shadow: 0 6px 12px rgba(204, 0, 204, 0.3);
+          transform: translateY(-2px);
+        }
+
+        &:active {
+          background: linear-gradient(135deg, rgba(170, 0, 170, 0.9), rgba(136, 0, 136, 0.9));
+          transform: translateY(0) scale(0.98);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        &.ptz-home {
+          background: linear-gradient(135deg, rgba(204, 0, 204, 0.4), rgba(136, 0, 136, 0.4));
+          border-color: rgba(220, 50, 220, 0.6);
+
+          &:hover {
+            background: linear-gradient(135deg, rgba(220, 50, 220, 0.6), rgba(204, 0, 204, 0.6));
+            border-color: rgba(240, 100, 240, 0.8);
+          }
+        }
+      }
+    }
+
+    .zoom-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+
+      .zoom-btn {
+        flex: 1;
+        background: linear-gradient(135deg, rgba(68, 0, 68, 0.6), rgba(40, 0, 40, 0.6));
+        border: 2px solid rgba(204, 0, 204, 0.3);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+
+        &:hover {
+          background: linear-gradient(135deg, rgba(136, 0, 136, 0.8), rgba(102, 0, 102, 0.8));
+          border-color: rgba(220, 50, 220, 0.6);
+          box-shadow: 0 6px 12px rgba(204, 0, 204, 0.3);
+          transform: translateY(-2px);
+        }
+
+        &:active {
+          background: linear-gradient(135deg, rgba(170, 0, 170, 0.9), rgba(136, 0, 136, 0.9));
+          transform: translateY(0) scale(0.98);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+      }
+    }
+  }
+}
+
+// Mobile responsive
+@media (max-width: 768px) {
+  .onvif-controls {
+    right: 5px;
+    bottom: 45px;
+    padding: 10px;
+    min-width: 180px;
+
+    .ptz-controls .ptz-grid .ptz-btn {
+      padding: 10px;
+      font-size: 16px;
+    }
+  }
+
+  .onvif-toggle {
+    bottom: 5px;
+    right: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}

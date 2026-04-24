@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Live cat camera streaming web application",
   "scripts": {
-    "watch:css": "sass --watch styles/scss:styles/css --style compressed"
+    "watch:css": "sass --watch styles/scss:styles/css --style compressed",
+    "dev": "docker-compose up",
+    "dev:stop": "docker-compose down",
+    "dev:kill": "docker-compose down && docker ps -q --filter 'name=cats-' | xargs -r docker kill"
   },
   "keywords": [
     "cats",

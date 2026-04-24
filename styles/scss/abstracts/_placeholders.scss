@@ -132,13 +132,13 @@
 /// Primary button styles
 %button-primary {
   @extend %button-base;
-  background-color: $color-primary;
-  border-color: $color-primary;
+  background-color: $color-dark;
+  border-color: $color-dark;
   color: $color-white;
 
   &:hover:not(:disabled) {
-    background-color: darken-color($color-primary, 10%);
-    border-color: darken-color($color-primary, 10%);
+    background-color: darken-color($color-primary: #880088; $color-dark, 10%);
+    border-color: darken-color($color-primary: #880088; $color-dark, 10%);
   }
 }
 
@@ -146,11 +146,11 @@
 %button-secondary {
   @extend %button-base;
   background-color: transparent;
-  border-color: $color-primary;
-  color: $color-primary;
+  border-color: $color-dark;
+  color: $color-dark;
 
   &:hover:not(:disabled) {
-    background-color: $color-primary;
+    background-color: $color-dark;
     color: $color-white;
   }
 }
@@ -175,8 +175,8 @@
 
   &:focus {
     outline: none;
-    border-color: $color-primary;
-    box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    border-color: $color-dark;
+    box-shadow: 0 0 0 3px rgba($color-primary: #880088; $color-dark, 0.1);
   }
 
   &:disabled {

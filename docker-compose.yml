@@ -4,18 +4,32 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: cats-mediamtx
     restart: unless-stopped
+    # Use host.docker.internal to access host's Tailscale routes
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - CAMERA_USER=${CAMERA_USER}
       - CAMERA_PASS=${CAMERA_PASS}
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
-    ports:
-      - "8554:8554" # RTSP
-      - "8888:8888" # HLS
-      - "8889:8889" # WebRTC
-      - "8189:8189/udp" # WebRTC ICE UDP Mux
-      - "9997:9997" # API
-      - "9998:9998" # Metrics
+    networks:
+      - cats-network
+
+  # ONVIF Backend - Camera control proxy
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cats-backend
+    restart: unless-stopped
+    # Use host.docker.internal to access host's Tailscale routes
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - CAMERA_USER=${CAMERA_USER}
+      - CAMERA_PASS=${CAMERA_PASS}
+      - PORT=3001
+      - TEST_MODE=${TEST_MODE:-false}
     networks:
       - cats-network
 
@@ -27,16 +41,20 @@ services:
     container_name: cats-web
     restart: unless-stopped
     ports:
-      - "54999:80"
+      - "54999:54999"
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./app.js:/usr/share/nginx/html/app.js:ro
+      - ./auth.js:/usr/share/nginx/html/auth.js:ro
+      - ./config.js:/usr/share/nginx/html/config.js:ro
+      - ./onvif-controls.js:/usr/share/nginx/html/onvif-controls.js:ro
       - ./styles:/usr/share/nginx/html/styles:ro
       - ./images:/usr/share/nginx/html/images:ro
-    networks:
-      - cats-network
     depends_on:
       - mediamtx
+      - backend
+    networks:
+      - cats-network
 
 networks:
   cats-network:

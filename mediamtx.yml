@@ -57,7 +57,9 @@ paths:
   cam_left_low:
     source: rtsp://feralcreative:@NhMM-r*nM_H@hjWeAMZt8j@192.168.1.201:554/stream2
     sourceProtocol: tcp
-    sourceOnDemand: yes
+    sourceOnDemand: no
+    runOnInit: echo "LEFT low-quality camera connected"
+    runOnInitRestart: yes
 
   # RIGHT Camera (192.168.1.202)
   cam_right:
@@ -70,7 +72,9 @@ paths:
   cam_right_low:
     source: rtsp://feralcreative:@NhMM-r*nM_H@hjWeAMZt8j@192.168.1.202:554/stream2
     sourceProtocol: tcp
-    sourceOnDemand: yes
+    sourceOnDemand: no
+    runOnInit: echo "RIGHT low-quality camera connected"
+    runOnInitRestart: yes
 
   # TOP Camera (192.168.1.203)
   cam_top:
@@ -83,7 +87,9 @@ paths:
   cam_top_low:
     source: rtsp://feralcreative:@NhMM-r*nM_H@hjWeAMZt8j@192.168.1.203:554/stream2
     sourceProtocol: tcp
-    sourceOnDemand: yes
+    sourceOnDemand: no
+    runOnInit: echo "TOP low-quality camera connected"
+    runOnInitRestart: yes
 
   # OTHER Camera (192.168.1.204)
   cam_other:
@@ -96,4 +102,6 @@ paths:
   cam_other_low:
     source: rtsp://feralcreative:@NhMM-r*nM_H@hjWeAMZt8j@192.168.1.204:554/stream2
     sourceProtocol: tcp
-    sourceOnDemand: yes
+    sourceOnDemand: no
+    runOnInit: echo "OTHER low-quality camera connected"
+    runOnInitRestart: yes

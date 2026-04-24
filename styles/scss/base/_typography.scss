@@ -117,19 +117,19 @@ small,
 // =============================================================================
 
 a {
-  color: $color-primary;
+  color: $color-dark;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
   transition: $transition-fast;
 
   &:hover {
-    color: darken-color($color-primary, 15%);
+    color: darken-color($color-primary: #880088; $color-dark, 15%);
     text-decoration-thickness: 2px;
   }
 
   &:focus {
-    outline: 2px solid $color-primary;
+    outline: 2px solid $color-primary: #880088; $color-dark;
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -235,7 +235,7 @@ pre {
 blockquote {
   margin: 0 0 $spacing-lg;
   padding: $spacing-md 0 $spacing-md $spacing-lg;
-  border-left: 4px solid $color-primary;
+  border-left: 4px solid $color-primary: #880088; $color-dark;
   background-color: $color-gray-50;
   font-style: italic;
 

@@ -57,5 +57,14 @@ else
     exit 1
 fi
 
-log_success "Pre-build hook completed"
+log_info "Building backend Docker image..."
 
+# Build backend image
+if docker build --platform linux/amd64 -t cats-backend:latest ./backend; then
+    log_success "Backend image built successfully"
+else
+    log_error "Failed to build backend image"
+    exit 1
+fi
+
+log_success "Pre-build hook completed"

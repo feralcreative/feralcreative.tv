@@ -38,4 +38,8 @@ const CONFIG = {
     "yakamoosedev@gmail.com",
     "dave@trifoxdesigns.com",
   ],
+    ADVANCED_FEATURES: [
+    "@feralcreative.co",
+    "ziadezzat@gmail.com",
+    "rhobbs007@gmail.com"]
 };

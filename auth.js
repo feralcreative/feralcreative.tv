@@ -70,6 +70,29 @@ class GoogleAuth {
     });
   }
 
+  // Check if user has advanced features (ONVIF controls, etc.)
+  hasAdvancedFeatures() {
+    if (!this.user || !this.user.email) {
+      return false;
+    }
+
+    // If no advanced features list, deny all
+    if (!CONFIG.ADVANCED_FEATURES || CONFIG.ADVANCED_FEATURES.length === 0) {
+      return false;
+    }
+
+    // Check against advanced features emails/domains
+    return CONFIG.ADVANCED_FEATURES.some((allowed) => {
+      if (allowed.startsWith("@")) {
+        // Domain check
+        return this.user.email.endsWith(allowed);
+      } else {
+        // Exact email check
+        return this.user.email === allowed;
+      }
+    });
+  }
+
   // Parse JWT token
   parseJwt(token) {
     const base64Url = token.split(".")[1];
@@ -157,27 +180,38 @@ class GoogleAuth {
 // Initialize auth when page loads
 let auth;
 window.addEventListener("load", async () => {
+  console.log("[AUTH] Page loaded, initializing auth...");
+  console.log("[AUTH] Hostname:", window.location.hostname);
+  console.log("[AUTH] DEV_MODE:", CONFIG.DEV_MODE);
+
   auth = new GoogleAuth();
 
   // Check if in dev mode (only works on localhost)
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  console.log("[AUTH] Is localhost:", isLocalhost);
+
   if (CONFIG.DEV_MODE && isLocalhost) {
+    console.log("[AUTH] DEV_MODE enabled - bypassing authentication");
     // Bypass authentication in dev mode
+    // Use an email that has advanced features access
     auth.user = {
-      email: "dev@localhost",
-      name: "Developer",
+      email: "dev@feralcreative.co",
+      name: "Developer (Local)",
       picture: null,
       credential: null,
     };
+    console.log("[AUTH] Dev user set:", auth.user);
     auth.onAuthStateChanged();
+    console.log("[AUTH] onAuthStateChanged called");
     return;
   }
 
+  console.log("[AUTH] Not in dev mode, checking session...");
   // Check if already signed in
   if (!auth.checkSession()) {
+    console.log("[AUTH] No session found, initializing Google Sign-In...");
     // Wait for Google API to load, then initialize
     await auth.init();
     auth.renderSignInButton();
   }
 });
-

@@ -110,7 +110,9 @@ test_ssh_connection() {
 load_env_file() {
     if [ -f "$PROJECT_ROOT/.env" ]; then
         log_info "Loading environment variables from .env..."
-        export $(cat "$PROJECT_ROOT/.env" | grep -v '^#' | grep -v '^$' | xargs)
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
         log_success "Environment variables loaded"
     else
         log_warning "No .env file found - some features may be disabled"
@@ -193,6 +195,49 @@ load_image_on_nas() {
         log_success "Docker image loaded on NAS"
     else
         log_error "Failed to load Docker image on NAS"
+        exit 1
+    fi
+}
+
+save_and_transfer_backend_image() {
+    log_info "Saving backend Docker image to tar.gz..."
+
+    local temp_file="/tmp/cats-backend-$(date +%s).tar.gz"
+
+    if docker save "cats-backend:latest" | gzip > "$temp_file"; then
+        log_success "Backend image saved to $temp_file"
+    else
+        log_error "Failed to save backend Docker image"
+        exit 1
+    fi
+
+    log_info "Transferring backend image to NAS (this may take a few minutes)..."
+
+    local ssh_cmd=$(get_ssh_cmd)
+    local nas_temp_file="${NAS_DEPLOY_PATH}/cats-backend.tar.gz"
+
+    # Transfer using cat and ssh pipe (more reliable than scp)
+    if cat "$temp_file" | $ssh_cmd "$NAS_SSH_HOST" "cat > ${nas_temp_file}"; then
+        log_success "Backend image transferred successfully"
+    else
+        log_error "Failed to transfer backend image to NAS"
+        rm -f "$temp_file"
+        exit 1
+    fi
+
+    rm -f "$temp_file"
+}
+
+load_backend_image_on_nas() {
+    log_info "Loading backend Docker image on NAS..."
+
+    local ssh_cmd=$(get_ssh_cmd)
+    local nas_temp_file="${NAS_DEPLOY_PATH}/cats-backend.tar.gz"
+
+    if $ssh_cmd "$NAS_SSH_HOST" "/usr/local/bin/docker load < ${nas_temp_file} && rm ${nas_temp_file}"; then
+        log_success "Backend Docker image loaded on NAS"
+    else
+        log_error "Failed to load backend Docker image on NAS"
         exit 1
     fi
 }
@@ -281,7 +326,11 @@ deploy_container() {
 
     $ssh_cmd "$NAS_SSH_HOST" << EOF
 cd ${NAS_DEPLOY_PATH}
-/usr/local/bin/docker-compose down || true
+# Stop and remove all containers from compose
+/usr/local/bin/docker-compose down --remove-orphans || true
+# Force remove any lingering containers with the same name
+/usr/local/bin/docker rm -f cats-web cats-mediamtx cats-backend 2>/dev/null || true
+# Start fresh
 /usr/local/bin/docker-compose up -d
 EOF
 
@@ -319,18 +368,21 @@ purge_cloudflare_cache() {
     fi
 
     log_info "Purging Cloudflare cache..."
+    log_info "Zone ID: $CLOUDFLARE_ZONE_ID"
 
     PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
         -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
         -H "Content-Type: application/json" \
         -d '{"purge_everything":true}')
 
+    log_info "Cloudflare response: $PURGE_RESPONSE"
+
     # Check if purge was successful
     if echo "$PURGE_RESPONSE" | grep -q '"success"[[:space:]]*:[[:space:]]*true'; then
         log_success "Cloudflare cache purged successfully"
     else
         log_error "Failed to purge Cloudflare cache"
-        log_info "Response: $PURGE_RESPONSE"
+        log_info "Full response: $PURGE_RESPONSE"
         log_warning "You may need to manually purge the cache in Cloudflare dashboard"
         # Don't exit - cache purge failure shouldn't stop deployment
     fi
@@ -343,10 +395,10 @@ show_status() {
 
     $ssh_cmd "$NAS_SSH_HOST" << EOF
 echo "=== Container Status ==="
-/usr/local/bin/docker ps | grep $CONTAINER_NAME || echo "Container not running"
+/usr/local/bin/docker ps | grep -E "cats-web|cats-backend|cats-mediamtx" || echo "Containers not running"
 echo ""
 echo "=== Recent Logs ==="
-/usr/local/bin/docker logs --tail 20 $CONTAINER_NAME
+/usr/local/bin/docker logs --tail 20 cats-web 2>/dev/null || echo "No logs available"
 EOF
 }
 
@@ -384,11 +436,17 @@ main() {
     # Build image locally
     build_image
 
-    # Save and transfer image
+    # Save and transfer web image
     save_and_transfer_image
 
-    # Load image on NAS
+    # Load web image on NAS
     load_image_on_nas
+
+    # Save and transfer backend image
+    save_and_transfer_backend_image
+
+    # Load backend image on NAS
+    load_backend_image_on_nas
 
     # Prepare NAS directories
     prepare_nas_directories

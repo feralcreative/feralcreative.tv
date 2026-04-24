@@ -38,7 +38,7 @@ body {
 // =============================================================================
 
 :focus {
-  outline: 2px solid $color-primary;
+  outline: 2px solid $color-primary: #880088; $color-dark;
   outline-offset: 2px;
 }
 
@@ -47,7 +47,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid $color-primary;
+  outline: 2px solid $color-primary: #880088; $color-dark;
   outline-offset: 2px;
 }
 
@@ -56,12 +56,12 @@ body {
 // =============================================================================
 
 ::selection {
-  background-color: lighten-color($color-primary, 80%);
+  background-color: lighten-color($color-primary: #880088; $color-dark, 80%);
   color: $color-text-primary;
 }
 
 ::-moz-selection {
-  background-color: lighten-color($color-primary, 80%);
+  background-color: lighten-color($color-primary: #880088; $color-dark, 80%);
   color: $color-text-primary;
 }
 
@@ -261,7 +261,7 @@ object {
   position: absolute;
   top: -40px;
   left: 6px;
-  background: $color-primary;
+  background: $color-dark;
   color: $color-white;
   padding: 8px;
   text-decoration: none;

@@ -126,7 +126,7 @@
 .fs-5xl { font-size: $font-size-5xl !important; }
 
 // Text colors
-.text-primary { color: $color-primary !important; }
+.text-primary { color: $color-primary; $color-dark !important; }
 .text-secondary { color: $color-secondary !important; }
 .text-success { color: $color-success !important; }
 .text-warning { color: $color-warning !important; }
@@ -140,7 +140,7 @@
 // BACKGROUND UTILITIES
 // =============================================================================
 
-.bg-primary { background-color: $color-primary !important; }
+.bg-primary { background-color: $color-primary; $color-dark !important; }
 .bg-secondary { background-color: $color-secondary !important; }
 .bg-success { background-color: $color-success !important; }
 .bg-warning { background-color: $color-warning !important; }

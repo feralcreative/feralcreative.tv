@@ -24,7 +24,7 @@
         @content;
       }
     } @else if $direction == down {
-      @media (max-width: $breakpoint-value - 1px) {
+      @media (max-width: $breakpoint-value) {
         @content;
       }
     }
@@ -199,7 +199,7 @@
 }
 
 /// Focus styles for accessibility
-@mixin focus-outline($color: $color-primary, $width: 2px, $offset: 2px) {
+@mixin focus-outline($color: $color-dark, $width: 2px, $offset: 2px) {
   &:focus {
     outline: $width solid $color;
     outline-offset: $offset;

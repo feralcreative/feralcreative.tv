@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="">
+    <head>
+        <title>How to view Tapo camera on PC/NAS/NVR through RTSP/Onvif Protocol</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="bear-note-unique-identifier" content="F9A4F833-6C15-4AD6-95B2-467AAA4964A2">
+        <meta name="created" content="2026-02-11T15:45:35-0800">
+        <meta name="modified" content="2026-02-11T15:46:01-0800">
+        <meta name="tags" content="">
+        <meta name="last device" content="Feral Macbook">
+        
+        <script id="MathJax-script" async
+                src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+        <style>
+             body {
+   --base-background-color: #ffffff;
+   --document-background-color: var(--base-background-color);
+ }
+
+.document-wrapper {
+  /* Constants used to transform theme values to CSS */
+  --transform-line-height-factor: 1.17;
+
+  /* From template */
+  --base-text-color: #444444;
+  --base-text-secondary-color: #888888;
+  --base-text-tertiary-color: #d9d9d9;
+  --base-background-color: #ffffff;
+  --base-background-secondary-color: #F3F5F7;
+  --base-background-tertiary-color: #E4E5E6;
+  --base-stroke-color: #d9d9d9;
+  --base-stroke-secondary-color: #d9d9d9;
+  --base-accent-color: #DD4C4F;
+  --base-highlight-color: ;
+
+  --document-background-color: var(--base-background-color);
+  --document-text-color: var(--base-text-color);
+  --document-text-secondary-color: var(--base-text-secondary-color);
+  --document-text-light-color: var(--base-text-secondary-color);
+  --document-accent-color: var(--base-accent-color);
+  --document-cursor-color: var(--base-accent-color);
+  --document-link-color: var(--base-accent-color);
+  --document-list-marker-color: var(--base-accent-color);
+  --document-marker-color: var(--base-text-tertiary-color);
+  --document-selection-color: var(--base-selection-color);
+  --document-selection-inactive-color: var(--base-background-tertiary-color);
+  --document-text-font: "AvenirNext-Regular";
+  --document-text-size: 15px;
+  --document-line-height-multiplier: calc(
+    1.5 * var(--transform-line-height-factor)
+  );
+
+  --document-headers-text-color: var(--base-text-color);
+  --document-headers-font: "AvenirNext-Medium";
+  --document-headers-modular-scale: 1.125;
+  --document-headers-line-height-multiplier: calc(
+    1.3 * var(--transform-line-height-factor)
+  );
+  --document-headers-add-top-bottom-padding: 1;
+  --document-headers-padding-top-multiplier: 0.5;
+  --document-headers-padding-bottom-multiplier: 0.3;
+
+  --document-code-text-color: var(--base-text-color);
+  --document-code-border-color: var(--base-text-tertiary-color);
+  --document-code-background-color: var(--base-background-secondary-color);
+  --document-code-font: "Menlo-Regular";
+  --document-code-text-size-multiplier: 0.91em;
+
+  --document-code-syntax-highlight-comment: #65798c;
+  --document-code-syntax-highlight-constant: #0095c9;
+  --document-code-syntax-highlight-number: #0095c9;
+  --document-code-syntax-highlight-string: #d12f1b;
+  --document-code-syntax-highlight-entity: #4a838b;
+  --document-code-syntax-highlight-keyword: #ad3da4;
+  --document-code-syntax-highlight-function: #4a838b;
+  --document-code-syntax-highlight-variable: #4a838b;
+
+  --document-task-background-color: var(--base-background-color);
+  --document-task-border-color: var(--base-text-secondary-color);
+  --document-task-check-color: var(--base-text-color);
+
+  --document-tag-background-color: var(--base-background-tertiary-color);
+  --document-tag-text-color: var(--base-text-color);
+  --document-tag-marker-color: var(--base-text-secondary-color);
+
+  --document-highlighter-background-color: #CDF7BD;
+  --document-highlighter-text-color: #102D05;
+
+  --document-highlighter-red-background-color: #FFD5D5;
+  --document-highlighter-red-text-color: #321A00;
+
+  --document-highlighter-blue-background-color: #C9E5FF;
+  --document-highlighter-blue-text-color: #001A32;
+
+  --document-highlighter-green-background-color: #CDF7BD;
+  --document-highlighter-green-text-color: #102D05;
+
+  --document-highlighter-purple-background-color: #FEDAFF;
+  --document-highlighter-purple-text-color: #310032;
+
+  --document-highlighter-yellow-background-color: #FCF195;
+  --document-highlighter-yellow-text-color: #312C01;
+  
+  --document-file-fold-color: var(--base-background-tertiary-color);
+  --document-file-background-color: var(--base-background-secondary-color);
+
+  --document-separator-border-color: var(--base-stroke-secondary-color);
+
+  --document-table-border-color: var(--base-stroke-secondary-color);
+  --document-table-cell-background-color: var(--base-background-color);
+  --document-table-cell-alternate-background-color: var(
+    --base-background-secondary-color
+  );
+  
+  /* Callouts */
+  --document-md-indentation: 32px;
+  --nested-block-marker-skew: -5px;
+  /* Blue */
+  --document-callout-note-background-color: hsla(209, 100%, 89%, 0.15);
+  --document-callout-note-border-color: hsla(209, 80%, 35%, 0.1);
+  --document-callout-note-bar-color: hsla(209, 80%, 35%, 0.8);
+  
+  /* Green */
+  --document-callout-tip-background-color: hsla(103, 78%, 85%, 0.15);
+  --document-callout-tip-border-color: hsla(103, 80%, 35%, 0.1);
+  --document-callout-tip-bar-color: hsla(103, 80%, 35%, 0.8);
+  
+  /* Purple */
+  --document-callout-important-background-color: hsla(298, 100%, 93%, 0.15);
+  --document-callout-important-border-color: hsla(298, 80%, 35%, 0.07);
+  --document-callout-important-bar-color: hsla(298, 80%, 35%, 0.8);
+  
+  /* Yellow */
+  --document-callout-warning-background-color: hsla(54, 94%, 79%, 0.15);
+  --document-callout-warning-border-color: hsla(45, 94%, 50%, 0.15);
+  --document-callout-warning-bar-color: hsla(45, 94%, 50%, 1);
+  
+  /* Red */
+  --document-callout-caution-background-color: hsla(31, 98%, 81%, 0.15);
+  --document-callout-caution-border-color: hsla(31, 98%, 50%, 0.1);
+  --document-callout-caution-bar-color: hsla(31, 98%, 50%, 1);
+}
+
+.document-wrapper,body{background-color:var(--document-background-color)}.document-wrapper h1.setext,.document-wrapper h2.setext{border-bottom:calc(2 * var(--document-hairline-width)) solid var(--document-separator-border-color);padding-bottom:.6em}.document-wrapper blockquote blockquote blockquote blockquote blockquote::before,.document-wrapper blockquote blockquote blockquote::before,.document-wrapper blockquote::before{background-color:var(--document-list-marker-color)}.document-wrapper td[data-alignment="1"],.document-wrapper th{text-align:left}.document-wrapper :after,.document-wrapper a,.document-wrapper abbr,.document-wrapper acronym,.document-wrapper address,.document-wrapper applet,.document-wrapper article,.document-wrapper aside,.document-wrapper audio,.document-wrapper b,.document-wrapper big,.document-wrapper blockquote,.document-wrapper canvas,.document-wrapper caption,.document-wrapper center,.document-wrapper cite,.document-wrapper code,.document-wrapper dd,.document-wrapper del,.document-wrapper details,.document-wrapper dfn,.document-wrapper div,.document-wrapper dl,.document-wrapper dt,.document-wrapper em,.document-wrapper embed,.document-wrapper fieldset,.document-wrapper figcaption,.document-wrapper figure,.document-wrapper footer,.document-wrapper form,.document-wrapper h1,.document-wrapper h2,.document-wrapper h3,.document-wrapper h4,.document-wrapper h5,.document-wrapper h6,.document-wrapper header,.document-wrapper hgroup,.document-wrapper i,.document-wrapper iframe,.document-wrapper ins,.document-wrapper kbd,.document-wrapper label,.document-wrapper legend,.document-wrapper li,.document-wrapper mark,.document-wrapper menu,.document-wrapper nav,.document-wrapper object,.document-wrapper ol,.document-wrapper output,.document-wrapper p,.document-wrapper pre,.document-wrapper q,.document-wrapper ruby,.document-wrapper s,.document-wrapper samp,.document-wrapper section,.document-wrapper small,.document-wrapper span,.document-wrapper strike,.document-wrapper strong,.document-wrapper summary,.document-wrapper table,.document-wrapper tbody,.document-wrapper td,.document-wrapper tfoot,.document-wrapper th,.document-wrapper thead,.document-wrapper time,.document-wrapper tr,.document-wrapper tt,.document-wrapper u,.document-wrapper ul,.document-wrapper var,.document-wrapper video{all:unset}.document-wrapper{--document-inline-padding-top-bottom:0.25em;--document-inline-padding-left-right:0.25em;--header-1-font-size:2em;--header-2-font-size:1.6em;--header-3-font-size:1.27em;--document-hairline-width:calc(var(--document-text-size) / 15);box-sizing:border-box;color:var(--document-text-color);font-family:var(--document-text-font);font-size:var(--document-text-size);line-height:var(--document-line-height-multiplier);min-height:100%;max-width:48em;width:100%;tab-size:4;margin:0 auto;padding:0 2em}body{text-rendering:optimizeLegibility}.document-wrapper:focus-visible{outline:0}.document-wrapper .marker{color:var(--document-marker-color);display:none}.document-wrapper [data-direction="2"]{direction:rtl}.document-wrapper div.footnote,.document-wrapper div.link-definition,.document-wrapper p{display:block}.document-wrapper p.blank-line::before{content:" "}.document-wrapper h1,.document-wrapper h2,.document-wrapper h3,.document-wrapper h4,.document-wrapper h5,.document-wrapper h6{font-family:var(--document-headers-font);display:block;line-height:var(--document-headers-line-height-multiplier)}.document-wrapper h1{font-size:var(--header-1-font-size);padding-block-start:0.8em;padding-block-end:0.33em}.document-wrapper h2{font-size:var(--header-2-font-size);padding-block-start:0.66em;padding-block-end:0.27em}.document-wrapper h3{font-size:var(--header-3-font-size);padding-block-start:0.53em;padding-block-end:0.27em}.document-wrapper code,.document-wrapper pre{font-size:var(--document-code-text-size-multiplier);font-family:var(--document-code-font),monospace}.document-wrapper h4,.document-wrapper h5,.document-wrapper h6{padding-block-start:0.4em;padding-block-end:0.27em}.document-wrapper h1.setext{margin-bottom:.45em}.document-wrapper h2.setext{margin-bottom:.2em}.document-wrapper .fenced-code *,.document-wrapper .fenced-code-content .marker,.document-wrapper .fenced-code-content .space,.document-wrapper .hard-linebreak-marker,.document-wrapper .image .space,.document-wrapper .image-destination,.document-wrapper .image-label,.document-wrapper .image-title,.document-wrapper .indented-code .space,.document-wrapper .link .space,.document-wrapper .link-destination,.document-wrapper .link-label,.document-wrapper .link-title,.document-wrapper .replace .text,.document-wrapper .setext-heading-marker+.line-ending,.document-wrapper .yaml-marker+.line-ending,.document-wrapper li>p>.space:first-child,.document-wrapper tr.delimiter-row{display:none}.document-wrapper ol,.document-wrapper ul{display:block;padding-inline-start:2.13em}.document-wrapper li{display:list-item;color:var(--document-text-color)}.document-wrapper .color-marker,.document-wrapper .entity-marker,.document-wrapper .fenced-code-content,.document-wrapper .fenced-code-content *,.document-wrapper .footnote-separator,.document-wrapper .link-definition-separator,.document-wrapper code.code-inline,.document-wrapper li>p{display:inline}.document-wrapper ul{list-style-type:disc}.document-wrapper li li li li li li li ul,.document-wrapper li li li li li ul,.document-wrapper li li li ul,.document-wrapper li ul{list-style:circle}.document-wrapper li li li li li li ul,.document-wrapper li li li li ul,.document-wrapper li li ul{list-style:disc}.document-wrapper li::marker{color:var(--document-list-marker-color)}.document-wrapper ol{list-style-type:none;counter-reset:custom-list-item calc(var(--data-list-start,1) - 1)}.document-wrapper ol>li{counter-increment:custom-list-item;position:relative}.document-wrapper ol>li::before{content:counter(custom-list-item) ". ";color:var(--document-list-marker-color);position:absolute;transform:translate(calc(-100% - .33em),0)}.document-wrapper ol>li[data-big-number=true]{margin-inline-start:-2.05em}.document-wrapper ol>li[data-big-number=true]::before{position:static;padding-inline-end:0.25em}.document-wrapper ol>li[data-list-type="1"]:before{content:counter(custom-list-item) ") "}.document-wrapper [data-direction="2"] ol>li::before,.document-wrapper ol[data-direction="2"]>li::before{transform:translate(calc(100% + .33em),0)}.document-wrapper li[role=checkbox]{list-style:none;position:relative}.document-wrapper li[aria-checked=true]{color:var(--document-text-secondary-color)}.document-wrapper .todo-checkbox{display:inline-block;margin-left:-1.7em;margin-right:.5em}.document-wrapper .todo-checkbox svg{display:inline-block;margin-bottom:-.3em}.document-wrapper blockquote{display:block;padding-inline-start:2.13em;position:relative}.document-wrapper code,.document-wrapper mark,span.highlighted{padding:var(--document-inline-padding-top-bottom) var(--document-inline-padding-left-right)}.document-wrapper blockquote::before{content:"";position:absolute;top:.2em;left:1em;width:.13em;height:calc(100% - .4em);border:var(--document-hairline-width) solid var(--document-list-marker-color);border-radius:.33em}.document-wrapper code,.document-wrapper pre.fenced-code,.document-wrapper pre.indented-code,.document-wrapper pre.yaml{color:var(--document-code-text-color);background-color:var(--document-code-background-color);border-radius:.25em}.document-wrapper [data-direction="2"] blockquote::before,.document-wrapper blockquote[data-direction="2"]::before{left:0;right:1em}.document-wrapper blockquote blockquote blockquote blockquote blockquote blockquote::before,.document-wrapper blockquote blockquote blockquote blockquote::before,.document-wrapper blockquote blockquote::before{background-color:transparent}.document-wrapper hr{display:block;margin-block-start:calc(var(--document-line-height-multiplier) * 0.5em);margin-block-end:calc(var(--document-line-height-multiplier) * -0.5em);border-top:var(--document-hairline-width) solid var(--document-separator-border-color)}.document-wrapper pre{display:block;white-space:pre-wrap}.document-wrapper pre.indented-code{padding-inline-start:2.13em}.document-wrapper pre.fenced-code,.document-wrapper pre.yaml{padding:0 .5em}.document-wrapper .fenced-code::before{content:"\200B"}.document-wrapper code{font-weight:400;font-style:normal;display:block}.document-wrapper mark code{color:var(--document-text-color);background-color:var(--document-highlighter-background-color)}.document-wrapper em,.document-wrapper i{font-family:AvenirNext-Italic}.document-wrapper b,.document-wrapper strong,.document-wrapper th{font-family:AvenirNext-Bold}.document-wrapper mark,span.highlighted{color:var(--document-highlighter-background-text-color);background-color:var(--document-highlighter-background-color);text-decoration:inherit;unicode-bidi:embed;border-radius:.25em}.document-wrapper mark.red,span.highlighted.red{color:var(--document-highlighter-red-background-text-color);background-color:var(--document-highlighter-red-background-color)}.document-wrapper mark.blue,span.highlighted.blue{color:var(--document-highlighter-blue-background-text-color);background-color:var(--document-highlighter-blue-background-color)}.document-wrapper mark.green,span.highlighted.green{color:var(--document-highlighter-green-background-text-color);background-color:var(--document-highlighter-green-background-color)}.document-wrapper mark.yellow,span.highlighted.yellow{color:var(--document-highlighter-yellow-background-text-color);background-color:var(--document-highlighter-yellow-background-color)}.document-wrapper mark.purple,span.highlighted.purple{color:var(--document-highlighter-purple-background-text-color);background-color:var(--document-highlighter-purple-background-color)}.document-wrapper u{text-decoration:underline;text-decoration-color:var(--document-accent-color);unicode-bidi:embed}.document-wrapper s,.document-wrapper strike{text-decoration:line-through}.document-wrapper a{color:var(--document-link-color);unicode-bidi:embed;cursor:pointer}.document-wrapper a:hover{text-decoration:inherit}.document-wrapper .wiki-separator-marker{display:inline;color:inherit}.document-wrapper .link-definition-title{color:var(--document-text-light-color)}.document-wrapper .footnote-ref{font-size:.9em;vertical-align:super}.document-wrapper span.entity{direction:ltr;unicode-bidi:embed;color:var(--document-code-syntax-highlight-entity)}.document-wrapper span.escape{unicode-bidi:embed}.document-wrapper .color{font-family:var(--document-code-font),monospace;font-size:var(--document-code-text-size-multiplier);padding-inline-start:1.2em;position:relative;direction:ltr;unicode-bidi:embed}.document-wrapper .color::before{content:"";position:absolute;width:.9em;height:.9em;left:0;bottom:0;transform:translateY(-15%);border:var(--document-hairline-width) solid rgb(0,0,0,.3);border-radius:.9em;background-color:var(--data-color)}.document-wrapper .hashtag{color:var(--document-tag-text-color);background-color:var(--document-tag-background-color);border-radius:1em;padding:calc(var(--document-inline-padding-top-bottom) - 2 * var(--document-hairline-width)) calc(var(--document-inline-padding-left-right) + .3em);unicode-bidi:embed}.document-wrapper .hashtag>.marker{display:inline;color:var(--document-tag-marker-color);padding:0}.document-wrapper table{display:block;max-width:fit-content;overflow-x:auto;border-collapse:separate;border-spacing:0;border:var(--document-hairline-width) solid var(--document-table-border-color);border-radius:.33em;margin-bottom:calc(var(--document-line-height-multiplier) * 1em)}.document-wrapper table[data-direction="2"]{margin-left:auto;direction:ltr}.document-wrapper tr{display:table-row;background-color:var(--document-table-cell-background-color)}.document-wrapper tr.header-row,.document-wrapper tr:nth-child(odd){background-color:var(--document-table-cell-alternate-background-color)}.document-wrapper td,.document-wrapper th{box-sizing:border-box;display:table-cell;padding:.37em .75em;min-width:5em;border-right:var(--document-hairline-width) solid var(--document-table-border-color)}.document-wrapper td:last-of-type,.document-wrapper th:last-of-type{border:none}.document-wrapper table[data-direction="2"] td{margin-left:auto}.document-wrapper td[data-alignment="2"]{text-align:right}.document-wrapper td[data-alignment="3"]{text-align:center}.document-wrapper .code_comment{color:var(--document-code-syntax-highlight-comment)}.document-wrapper .code_constant{color:var(--document-code-syntax-highlight-constant)}.document-wrapper .code_number{color:var(--document-code-syntax-highlight-number)}.document-wrapper .code_string{color:var(--document-code-syntax-highlight-string)}.document-wrapper .code_entity{color:var(--document-code-syntax-highlight-entity)}.document-wrapper .code_keyword{color:var(--document-code-syntax-highlight-keyword)}.document-wrapper .code_function{color:var(--document-code-syntax-highlight-function)}.document-wrapper .code_variable{color:var(--document-code-syntax-highlight-variable)}.document-wrapper img{max-width:100%}.document-wrapper .pdf_preview{display:inline-block;width:100%;height:500px;background-color:#fff;overflow:hidden;padding:0;margin:0;position:relative;border-radius:4px}.document-wrapper .arrow svg #body,.document-wrapper .arrow svg #head{fill:var(--base-text-color)}.document-wrapper .todo-checkbox svg #body{stroke:var(--document-task-border-color)}.document-wrapper .todo-checkbox svg #check{fill:var(--document-task-check-color)}.document-wrapper .todo-checkbox.todo-checked svg #body{opacity:.35}.document-wrapper .todo-checkbox.todo-checked svg #check{opacity:.4}.document-wrapper blockquote.md-callout{padding-top:.8em;padding-bottom:.8em;border:1px solid;margin-inline:calc((var(--document-md-indentation) - 4px) * 0.5 + var(--nested-block-marker-skew));border-radius:3px;padding-inline-start:calc(var(--document-md-indentation) - 9px);padding-inline-end:calc(var(--document-md-indentation) - 9px);margin-left:1em}.document-wrapper blockquote.md-callout:before{top:0;left:0;width:.13em;height:calc(100%)}.document-wrapper>.md-callout{margin-inline:calc(var(--md-indentation) + (var(--md-indentation) - 4px) * 0.5 + var(--nested-block-marker-skew))}.document-wrapper .md-callout>.md-callout-head{font-family:var(--document-headers-font)}.document-wrapper .md-callout>.md-callout-head:not(:last-child){margin-bottom:.5em}.document-wrapper .md-callout-head img{vertical-align:baseline;margin-right:.1em}.document-wrapper blockquote.md-callout-note{border-color:var(--document-callout-note-border-color);background-color:var(--document-callout-note-background-color)}.document-wrapper blockquote.md-callout-note:before{border:var(--document-hairline-width) solid var(--document-callout-note-border-color);background-color:var(--document-callout-note-bar-color)}.document-wrapper .md-callout-note>.md-callout-head{color:var(--markdown-view-highlighter-blue-text-color)}.document-wrapper .md-callout-note .md-callout-head>img,.document-wrapper blockquote.md-callout-caution .md-callout-head>img,.document-wrapper blockquote.md-callout-tip .md-callout-head>img,.document-wrapper blockquote.md-callout-warning .md-callout-head>img{margin-bottom:-2px}.document-wrapper blockquote.md-callout-tip{border-color:var(--document-callout-tip-border-color);background-color:var(--document-callout-tip-background-color)}.document-wrapper blockquote.md-callout-tip:before{border:var(--document-hairline-width) solid var(--document-callout-tip-border-color);background-color:var(--document-callout-tip-bar-color)}.document-wrapper blockquote.md-callout-important::before,.document-wrapper blockquote.md-callout-important:before{background-color:var(--document-callout-important-bar-color)}.document-wrapper blockquote.md-callout-tip>.md-callout-head{color:var(--markdown-view-highlighter-green-text-color)}.document-wrapper blockquote.md-callout-important{border-color:var(--document-callout-important-border-color);background-color:var(--document-callout-important-background-color);background-color:var(--document-callout-important-background-color);border-color:var(--document-callout-important-border-color)}.document-wrapper blockquote.md-callout-important:before{border:var(--document-hairline-width) solid var(--document-callout-important-border-color)}.document-wrapper blockquote.md-callout-important>.md-callout-head{color:var(--markdown-view-highlighter-purple-text-color)}.document-wrapper blockquote.md-callout-important .md-callout-head>img{margin-bottom:-4px}.document-wrapper blockquote.md-callout-warning{background-color:var(--document-callout-warning-background-color);border-color:var(--document-callout-warning-border-color)}.document-wrapper blockquote.md-callout-warning::before{background-color:var(--document-callout-warning-bar-color);background-color:var(--document-callout-caution-bar-color)}.document-wrapper blockquote.md-callout-warning>.md-callout-head{color:var(--markdown-view-highlighter-yellow-text-color)}.document-wrapper blockquote.md-callout-caution{background-color:var(--document-callout-caution-background-color);border-color:var(--document-callout-caution-border-color)}.document-wrapper blockquote.md-callout-caution>.md-callout-head{color:var(--markdown-view-highlighter-red-text-color)}
+
+        </style>
+    </head>
+    <body>
+        <div class="document-wrapper">
+            <h1 id='How to view Tapo camera on PC/NAS/NVR through RTSP/Onvif Protocol'>How to view Tapo camera on PC/NAS/NVR through RTSP/Onvif Protocol</h1><p>How to view Tapo camera on PC/NAS/NVR through RTSP/Onvif Protocol</p><br>
+<p>The Tapo wired camera supports the RTSP and ONVIF (Profile S) protocols, enabling compatibility with third-party NVR or NAS devices that also support RTSP/ONVIF.</p><br>
+<p>This article will show you how to connect the Tapo camera to your NVR/NAS or a third-party client on PC like VLC Player and iSpy.</p><br>
+<p>Important Notes:</p><br>
+<ul>
+<li>For battery cameras/doorbells, only the special models (Tapo D235/D225/TD25) support RTSP streaming when hardwired, with a jumper cable installed, and the always-on mode turned on. Other models (such as Tapo C410/C420/C425/D230) do not support RTSP streaming due to battery and electronic design limitations.</li>
+<li>It is not recommended to use this function on public networks. Only use it on trusted local networks and ensure that the Wi-Fi is encrypted.</li>
+<li>Tapo Care cloud storage cannot be used simultaneously with NVR or a microSD card due to the limited number of streams supported by some models. If all three are used at the same time, recording on the NVR will be disabled. To restart recording on the NVR, remove the microSD card from the camera.</li>
+<li>For dual-lens cameras, when connected to a PC/NAS/NVR via ONVIF, only the wide-angle lens stream is available.</li>
+</ul><h2 id='**Before you start:**'><b>Before you start:</b></h2><br>
+<ul>
+<li>Before using this function, you need to create a camera account on the Tapo app. Set a highly secure and complex username and password that is different from your Tapo account password.</li>
+<li>When adding the camera to an NVR or other third-party device, you will need the camera’s IP address. The IP address is usually assigned by your host router. You can find it on your host router’s DHCP list or in the Tapo app (go to the Device Settings page of the camera and tap Device Info to see its IP). For detailed instructions, please refer to the guide on <a href='https://www.tp-link.com/support/faq/2616/'>how to find the IP address of your Tapo & Kasa cameras.</a></li>
+<li>Ensure that the computer, NAS, NVR, and your camera are all connected to the same network or that they can access the public IP and port of your camera.</li>
+</ul><h2 id='**Step 1: Create a camera account in the Tapo app**'><b>Step 1: Create a camera account in the Tapo app</b></h2><br>
+<ol start='1' style='--data-list-start: 1;'>
+<li>On the "<b>Home</b>" page, tap on your camera model card to go to the camera Live View page. Or you can click on <b>Cameras</b> > <b>Manage</b> on your camera model to go to the Live View page.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-1_20240807092843u.png'></p><br>
+<ol start='2' style='--data-list-start: 2;'>
+<li>On the "<b>Live View</b>" page, tap the icon at the top right corner to enter the <b>Device Settings</b> page.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-2_20240807092843z.png'></p><br>
+<ol start='3' style='--data-list-start: 3;'>
+<li>Tap "<b>Advanced Settings</b>", then select "<b>Camera Account</b>" to create an account (username and password) for camera login on other portals.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-3_20240807092843q.png'><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-4_20240807092843v.png'></p><br>
+<p>You will see a prompt like below (About Camera Account), please read it and tap "<b>Understand and Agree to Use</b>", then you can create an account for the camera.</p><br>
+<p><b>Note: The username and password should contain 6 to 32 characters.</b></p><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-5_20240807092846n.png'><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-6_20240807092844z.png'></p><br>
+<h2 id='**Step 2: Add your Tapo camera on PC/NAS/NVR**'><b>Step 2: Add your Tapo camera on PC/NAS/NVR</b></h2><br>
+<p>ONVIF (Open Network Video Interface Forum) and RTSP (Real-Time Streaming Protocol) are two commonly used protocols in video surveillance and streaming.</p><br>
+<p>The Tapo camera can transmit real-time audio and video streams via the RTSP protocol. Additionally, if your PC, NAS, or NVR supports ONVIF, it can provide extra camera management features such as PTZ (pan-tilt-zoom) control.</p><br>
+<h3 id='**Option 1: Using ONVIF Protocol (using Agent DVR as an example)**'><b>Option 1: Using ONVIF Protocol (using Agent DVR as an example)</b></h3><br>
+<ol start='1' style='--data-list-start: 1;'>
+<li>Run the <b>Agent DVR</b> software on your computer.<br></li>
+<li>Click the <b>blank space</b> or “<b>Edit View</b>” to get started.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-1_20250908065735j.png'></p><br>
+<ol start='3' style='--data-list-start: 3;'>
+<li>Click the <b>blank space</b> or “<b>+</b>” to add a new device.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-2_20250908065735x.png'></p><br>
+<ol start='4' style='--data-list-start: 4;'>
+<li>Click “<b>New Device</b>”, then select “<b>ONVIF</b>” to proceed to the next step**.**</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-3_20250908065735r.png'></p><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-4_20250908065735q.png'></p><br>
+<ol start='5' style='--data-list-start: 5;'>
+<li>You can customize the activation of features such as “<b>Alerts</b>”, “<b>Record on Detect</b>”, “<b>Resize</b>”, and “<b>Record Raw</b>”. Then click “<b>OK</b>”.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-5_20250908065735t.png'></p><br>
+<ol start='6' style='--data-list-start: 6;'>
+<li>Click the “<b>Configuration</b>” button for the “<b>Source Type</b>”<b>.</b></li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-6_20250908065735s.png'></p><br>
+<ol start='7' style='--data-list-start: 7;'>
+<li>Enter the “<b>Username</b>” and “<b>Password</b>” that you set for your camera on the pop-up window, select “<b>Service URL</b>”, and click “<b>Get Video URLs</b>” to automatically retrieve the live URL. Then click “<b>OK</b>”<b>.</b></li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-7_20250908065735e.png'></p><br>
+<ol start='8' style='--data-list-start: 8;'>
+<li>On this page, you can customize the Camera's “<b>Name</b>”, “<b>Icon</b>”, “<b>Device Color</b>”, and other parameters, and click “<b>OK</b>”.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-8_20250908065735r.png'></p><br>
+<ol start='9' style='--data-list-start: 9;'>
+<li>Click “<b>Power</b>” to start Camera Live.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-9_20250908065735z.png'></p><br>
+<ol start='10' style='--data-list-start: 10;'>
+<li>After adding your Tapo camera to Agent DVR, you can monitor and manage it using the app. View the live, customize motion detection, check the recordings when motion is detected, set recording schedules, record videos, and more.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20250908145739-10_20250908065736h.jpeg'></p><br>
+<h3 id='**Option 2: Using RTSP Protocol Only (using VLC as an example)**'><b>Option 2: Using RTSP Protocol Only (using VLC as an example)</b></h3><br>
+<ol start='1' style='--data-list-start: 1;'>
+<li>Open the VLC software, select <b>Media > Open Network Stream</b>.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-12_20240807092844z.png'></p><br>
+<ol start='2' style='--data-list-start: 2;'>
+<li>Fill in the URL of the Tapo camera.</li>
+</ol><br>
+<p><img src='How%20to%20view%20Tapo%20camera%20on%20PCNASNVR%20through%20RTSPOnvif%20Protocol/image-20240807172844-13_20240807092844m.png'></p><br>
+<p>The URL of the RTSP live stream for the Tapo cameras will be:</p><br>
+<p>For high quality stream1: <a href='rtsp://IP'>rtsp://IP</a> Address/stream1</p><br>
+<p>For low quality stream2: rtsp:// IP Address/stream2</p><br>
+<p>But note that the URLs used by dual-lens cameras are different; take C246D and C840 as examples:</p><br>
+<p><b>Wide-angle Lens:</b></p><br>
+<p>For high quality stream1: <a href='rtsp://IP'>rtsp://IP</a> Address/stream1</p><br>
+<p>For low quality stream2: rtsp:// IP Address/stream2</p><br>
+<p><b>Telephoto Lens:</b></p><br>
+<p>For high quality stream1: <a href='rtsp://IP'>rtsp://IP</a> Address/stream6</p><br>
+<p>For low quality stream2: rtsp:// IP Address/stream7</p><br>
+<p>In some software, the URL need to add the port to access live stream, the default port is 554:</p><br>
+<p>For high quality stream1: <a href='rtsp://IP'>rtsp://IP</a> Address:554/stream1</p><br>
+<p>For low quality stream2: rtsp:// IP Address:554/stream2</p><br>
+<p>If you fail to stream the Tapo camera via the RTSP/ONVIF protocol, you may refer to the article for the troubleshooting:</p><br>
+<p><a href='https://community.tp-link.com/en/smart-home/forum/topic/652710'>https://community.tp-link.com/en/smart-home/forum/topic/652710</a></p><br>
+<h2 id='**QA**'><b>QA</b></h2><br>
+<h3 id='**Q1: How can I view the live stream of the Tapo camera remotely from another network?**'><b>Q1: How can I view the live stream of the Tapo camera remotely from another network?</b></h3><br>
+<p><b>A1:</b> You can set up a VPN network or use your router's port forwarding feature to allow external devices to access the public IP and reach the camera. However, please note that the RTSP/ONVIF protocols are not highly secure, so it is not advisable to expose the camera to a public IP via port forwarding for long periods. It is recommended to use a secure, encrypted VPN network.</p><br>
+<h3 id='**Q2：What ports are used by the Tapo camera for RTSP/ONVIF?**'><b>Q2：What ports are used by the Tapo camera for RTSP/ONVIF?</b></h3><br>
+<p><b>A2:</b> The Tapo camera uses the following ports for RTSP/ONVIF: ONVIF Service Port: 2020 and RTSP Service Port: 554.</p><br>
+<h3 id='**Q3：Why is the resolution of RTSP Stream 1 lower than the camera_s maximum resolution?**'><b>Q3：Why is the resolution of RTSP Stream 1 lower than the camera's maximum resolution?</b></h3><br>
+<p><b>A3:</b> For some models, like the C310, the resolution of Stream 1 (<a href='rtsp://IP'>rtsp://IP</a> Address/stream1) is determined by the video quality setting in the Tapo app. If you find that the resolution of Stream 1 is lower than the camera's maximum supported resolution, try changing the video quality setting to "<b>Best Quality</b>" in the Tapo app.</p><br>
+<h3 id='**Q4：What should I do if there is no or very little sound when watching the live stream using RTSP/ONVIF?**'><b>Q4：What should I do if there is no or very little sound when watching the live stream using RTSP/ONVIF?</b></h3><br>
+<p><b>A4:</b> If you find that there is no or very little sound when using RTSP/ONVIF to watch the live stream, please adjust the camera microphone settings in the Tapo app.</p><br>
+<h3 id='**Q5：Does the Tapo Camera support 2-way audio when connected via RTSP/ONVIF?**'><b>Q5：Does the Tapo Camera support 2-way audio when connected via RTSP/ONVIF?</b></h3><br>
+<p><b>A5:</b> The ONVIF standard includes multiple profiles, and the Tapo Camera only supports Profile S. This profile does not include 2-way audio. Profile S only covers basic functionalities such as video/audio streaming, network configuration, event handling, and PTZ (pan-tilt-zoom) control.</p><br>
+<h3 id='**Q6: Are there time limits when watching C840 Live View on third-party devices or apps?**'><b>Q6: Are there time limits when watching C840 Live View on third-party devices or apps?</b></h3><br>
+<p><b>A6:</b> Different third-party devices or applications may vary:</p><br>
+<ul>
+<li><b>VLC or AgentDVR</b>: There is no time limit when streaming via RTSP/ONVIF using VLC or AgentDVR.</li>
+<li><b>Alexa</b>: There is a 30-minute limit when watching live view using the Alexa app.</li>
+<li><b>Google Hub or Alexa Echo show</b>: There is a 10-minute limit when watching live view using Google Hub or Alexa Echo show.</li>
+</ul><h3 id='**Q7: How to switch the live camera lenses on a C840 on a third-party device/client?**'><b>Q7: How to switch the live camera lenses on a C840 on a third-party device/client?</b></h3><br>
+<p><b>A7:</b></p><br>
+<p>--- <b>RTSP Clients</b>: You can access different lenses by switching URLs.</p><br>
+<ul>
+<li>Wide-angle lens (high quality): <a href='rtsp://IP'>rtsp://IP</a> Address/stream1</li>
+<li>Wide-angle lens (low quality): <a href='rtsp://IP'>rtsp://IP</a> Address/stream2</li>
+<li>Telephoto Lens (High Quality): <a href='rtsp://IP'>rtsp://IP</a> Address/stream6</li>
+<li>Telephoto Lens (Low Quality): <a href='rtsp://IP'>rtsp://IP</a> Address/stream7</li>
+</ul><p>--- <b>ONVIF Clients</b>: Only Wide-angle lens is accessible. Does not support switching to other lenses.</p><br>
+<p>--- <b>Alexa / Google Hub / Alexa Echo Show</b>: Navigate to Tapo app > C840 device settings > Advanced Settings > Third-Party Display > Switch between 1x View or 2.5x View.</p><br>
+<p><a href='https://www.tp-link.com/us/support/faq/2680/'>How to view Tapo camera on PC/NAS/NVR through RTSP/Onvif Protocol</a></p>
+        </div>
+    </body>
+</html>

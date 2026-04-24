@@ -8,14 +8,18 @@ COPY index.html /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
 COPY config.js /usr/share/nginx/html/
 COPY auth.js /usr/share/nginx/html/
+COPY onvif-controls.js /usr/share/nginx/html/
 COPY styles /usr/share/nginx/html/styles
 COPY images /usr/share/nginx/html/images
 
-# Expose port 80
-EXPOSE 80
+# Force rebuild timestamp
+RUN echo "Build: $(date)"
+
+# Expose port 54999
+EXPOSE 54999
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:80 || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:54999 || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
