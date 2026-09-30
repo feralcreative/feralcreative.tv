@@ -2,7 +2,10 @@
   "name": "cats-feralcreative-co",
   "version": "1.0.0",
   "description": "Live cat camera streaming web application",
+  "type": "module",
   "scripts": {
+    "start": "bash utils/start.sh",
+    "start:no-open": "OPEN_BROWSER=0 bash utils/start.sh",
     "watch:css": "sass --watch styles/scss:styles/css --style compressed",
     "dev": "docker-compose up",
     "dev:stop": "docker-compose down",

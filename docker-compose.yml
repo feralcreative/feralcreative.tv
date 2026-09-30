@@ -41,7 +41,8 @@ services:
     container_name: cats-web
     restart: unless-stopped
     ports:
-      - "54999:54999"
+      # nginx.conf listens on 80; 54999 is the published host port, as in prod.
+      - "54999:80"
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./app.js:/usr/share/nginx/html/app.js:ro

@@ -15,11 +15,11 @@ COPY images /usr/share/nginx/html/images
 # Force rebuild timestamp
 RUN echo "Build: $(date)"
 
-# Expose port 54999
-EXPOSE 54999
+# Expose port 80 (nginx.conf listens on 80; the host publishes it as 54999)
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:54999 || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:80/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
