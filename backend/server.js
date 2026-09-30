@@ -16,8 +16,8 @@ app.use(express.json());
 // Camera configuration
 const CAMERAS = {
   left: { ip: "192.168.1.201", name: "LEFT" },
-  right: { ip: "192.168.1.202", name: "RIGHT" },
-  top: { ip: "192.168.1.203", name: "TOP" },
+  right: { ip: "192.168.1.203", name: "RIGHT" },
+  top: { ip: "192.168.1.202", name: "TOP" },
   other: { ip: "192.168.1.204", name: "OTHER" },
 };
 

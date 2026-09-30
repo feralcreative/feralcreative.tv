@@ -1,9 +1,8 @@
 // ONVIF Camera Controls for Advanced Users
 class ONVIFControls {
   constructor() {
-    // Use Tailscale IP when on localhost, otherwise use proxy
-    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    this.apiBaseUrl = isLocalhost ? "http://100.77.178.46:3001" : "/api";
+    // Use nginx's same-origin backend proxy in every environment.
+    this.apiBaseUrl = "/api";
     this.activeCamera = null;
     this.isMoving = false;
   }
