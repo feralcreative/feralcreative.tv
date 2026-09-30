@@ -1,4 +1,4 @@
-# MediaMTX Configuration for 4 TP-Link C211 Cameras
+# MediaMTX Configuration for 3 TP-Link C211 Cameras and an optional OBS feed
 # https://github.com/bluenviron/mediamtx
 
 # General settings
@@ -37,6 +37,10 @@ hlsPartDuration: 200ms
 rtspAddress: :8554
 rtspEncryption: "no"
 rtspAuthMethods: [basic]
+
+# OBS publishes H.264/AAC here; Docker host port publication is configured separately.
+rtmp: yes
+rtmpAddress: :1935
 
 # Path defaults
 pathDefaults:
@@ -91,17 +95,9 @@ paths:
     runOnInit: echo "TOP low-quality camera connected"
     runOnInitRestart: yes
 
-  # OTHER Camera (192.168.1.204)
+  # SKYLINE: optional USB camera published by OBS, replacing the retired bookshelf cam.
   cam_other:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.204:554/stream1
-    sourceProtocol: tcp
-    sourceOnDemand: no
-    runOnInit: echo "OTHER camera connected"
-    runOnInitRestart: yes
-
-  cam_other_low:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.204:554/stream2
-    sourceProtocol: tcp
-    sourceOnDemand: no
-    runOnInit: echo "OTHER low-quality camera connected"
-    runOnInitRestart: yes
+    source: publisher
+    overridePublisher: no
+    publishUser: "${CAMERA_USER}"
+    publishPass: "${CAMERA_PASS}"

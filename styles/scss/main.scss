@@ -221,6 +221,52 @@ header {
   background: linear-gradient(135deg, #ffd43b, #ffe066) !important;
 }
 
+// Optional camera off-air slate, shared by grid and modal
+.off-air {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 2rem 1rem;
+  background: $color-dark;
+  color: $color-text;
+  text-align: center;
+
+  &[hidden] {
+    display: none;
+  }
+
+  strong {
+    font-size: clamp(1.25rem, 3vw, 2.5rem);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  span {
+    color: $color-text-muted;
+    font-size: 0.9rem;
+  }
+}
+
+.off-air-bars {
+  width: min(65%, 280px);
+  height: 1.5rem;
+  margin-bottom: 0.8rem;
+  border-radius: 3px;
+  background: linear-gradient(to right, $color-white 0% 20%, $color-warning 20% 40%, $color-success 40% 60%, $color-accent 60% 80%, $color-secondary 80% 100%);
+  opacity: 0.8;
+}
+
+.status.offline,
+.camera-container .camera-header .status.offline {
+  color: $color-text;
+  background: $color-secondary;
+}
+
 // Spinner
 .spinner {
   width: 50px;

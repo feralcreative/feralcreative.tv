@@ -4,6 +4,8 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: cats-mediamtx
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:1935:1935" # OBS publishing from this Mac only
     # Use host.docker.internal to access host's Tailscale routes
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -46,6 +48,7 @@ services:
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./app.js:/usr/share/nginx/html/app.js:ro
+      - ./obs-stream.js:/usr/share/nginx/html/obs-stream.js:ro
       - ./auth.js:/usr/share/nginx/html/auth.js:ro
       - ./config.js:/usr/share/nginx/html/config.js:ro
       - ./onvif-controls.js:/usr/share/nginx/html/onvif-controls.js:ro

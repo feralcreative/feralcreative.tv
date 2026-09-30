@@ -28,7 +28,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Feral Cats">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20260213">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -129,20 +129,25 @@
                 </div>
             </div>
 
-            <!-- OTHER Camera -->
+            <!-- Optional OBS camera, using the former bookshelf tile -->
             <div class="camera-container">
                 <div class="camera-header">
-                    <h2>CENTER</h2>
-                    <span class="status" id="status-other">Connecting...</span>
+                    <h2>SKYLINE</h2>
+                    <span class="status offline" id="status-other">Off air</span>
                 </div>
                 <div class="video-wrapper">
                     <video id="video-other" autoplay muted playsinline></video>
-                    <div class="loading" id="loading-other">
+                    <div class="loading" id="loading-other" style="display: none;">
                         <div class="spinner"></div>
                     </div>
                     <div class="error" id="error-other" style="display: none;">
                         <p>Connection failed</p>
                         <button onclick="reconnect('other')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-other" role="status">
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>We'll be back when the camera is live.</span>
                     </div>
                 </div>
             </div>
@@ -171,6 +176,11 @@
                     <p>Connection failed</p>
                     <button onclick="reconnectModal()">Retry</button>
                 </div>
+                <div class="off-air" id="modal-offair" role="status" hidden>
+                    <div class="off-air-bars" aria-hidden="true"></div>
+                    <strong>Off the air</strong>
+                    <span>We'll be back when the camera is live.</span>
+                </div>
             </div>
 
             <!-- ONVIF controls will be inserted here by onvif-controls.js -->
@@ -179,7 +189,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="./app.js?v=5"></script>
+    <script src="./obs-stream.js?v=1"></script>
+    <script src="./app.js?v=7"></script>
     <script src="./onvif-controls.js?v=5"></script>
 </body>
 </html>

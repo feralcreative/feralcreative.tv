@@ -18,7 +18,6 @@ const CAMERAS = {
   left: { ip: "192.168.1.201", name: "LEFT" },
   right: { ip: "192.168.1.203", name: "RIGHT" },
   top: { ip: "192.168.1.202", name: "TOP" },
-  other: { ip: "192.168.1.204", name: "OTHER" },
 };
 
 // ONVIF credentials from environment
@@ -77,6 +76,22 @@ function requireAdvancedFeatures(req, res, next) {
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", cameras: Object.keys(devices) });
+});
+
+// Report only OBS availability, without exposing the MediaMTX control API.
+app.get("/api/streams/other/status", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    const response = await fetch("http://mediamtx:8888/cam_other/index.m3u8", {
+      signal: AbortSignal.timeout(2500),
+    });
+    if (response.status === 404) return res.json({ live: false });
+    if (!response.ok) return res.status(503).json({ live: false });
+    const playlist = await response.text();
+    res.json({ live: playlist.startsWith("#EXTM3U") });
+  } catch (error) {
+    res.status(503).json({ live: false });
+  }
 });
 
 // Get camera capabilities

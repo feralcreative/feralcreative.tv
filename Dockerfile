@@ -6,6 +6,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy static files
 COPY index.html /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
+COPY obs-stream.js /usr/share/nginx/html/
 COPY config.js /usr/share/nginx/html/
 COPY auth.js /usr/share/nginx/html/
 COPY onvif-controls.js /usr/share/nginx/html/

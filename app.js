@@ -2,6 +2,7 @@
 const cameras = ["left", "right", "top", "other"];
 const whepClients = {};
 let modalHls = null;
+let modalNativeCleanup = null;
 let currentModalCamera = null;
 
 // Initialize all cameras
@@ -29,6 +30,10 @@ function addCameraClickHandler(camera) {
 
 // Connect to a single camera using HLS
 async function connectCamera(camera) {
+  if (camera === "other") {
+    obsStream.attach("grid");
+    return;
+  }
   const videoElement = document.getElementById(`video-${camera}`);
   const statusElement = document.getElementById(`status-${camera}`);
   const loadingElement = document.getElementById(`loading-${camera}`);
@@ -136,6 +141,10 @@ async function tryHLSFallback(camera, retryCount = 0, maxRetries = 3) {
 
 // Reconnect a camera
 async function reconnect(camera) {
+  if (camera === "other") {
+    obsStream.check();
+    return;
+  }
   console.log(`[${camera}] Reconnecting...`);
 
   // Close existing connection
@@ -156,6 +165,7 @@ async function reconnect(camera) {
 
 // Open modal with high-res stream
 function openModal(camera) {
+  closeModal();
   currentModalCamera = camera;
   const modal = document.getElementById("camera-modal");
   const modalName = document.getElementById("modal-camera-name");
@@ -165,7 +175,7 @@ function openModal(camera) {
   const modalError = document.getElementById("modal-error");
 
   // Set camera name
-  modalName.textContent = camera.toUpperCase();
+  modalName.textContent = camera === "other" ? "SKYLINE" : camera.toUpperCase();
 
   // Show modal
   modal.style.display = "flex";
@@ -180,13 +190,19 @@ function openModal(camera) {
   loadModalStream(camera);
 
   // Initialize ONVIF controls in modal if user has access
-  if (window.onvifControls && auth && auth.hasAdvancedFeatures()) {
+  if (camera !== "other" && window.onvifControls && auth && auth.hasAdvancedFeatures()) {
     window.onvifControls.addControlsToModal(camera);
   }
 }
 
 // Load high-res stream in modal
 function loadModalStream(camera) {
+  if (modalNativeCleanup) modalNativeCleanup();
+  modalNativeCleanup = null;
+  if (camera === "other") {
+    obsStream.attach("modal");
+    return;
+  }
   const modalVideo = document.getElementById("modal-video");
   const modalStatus = document.getElementById("modal-status");
   const modalLoading = document.getElementById("modal-loading");
@@ -198,17 +214,23 @@ function loadModalStream(camera) {
   if (modalVideo.canPlayType("application/vnd.apple.mpegurl")) {
     // Native HLS support (Safari)
     modalVideo.src = streamPath;
-    modalVideo.addEventListener("loadedmetadata", () => {
+    const connected = () => {
       modalLoading.style.display = "none";
       modalStatus.textContent = "Connected";
       modalStatus.className = "status connected";
-    });
-    modalVideo.addEventListener("error", () => {
+    };
+    const failed = () => {
       modalLoading.style.display = "none";
       modalError.style.display = "flex";
       modalStatus.textContent = "Error";
       modalStatus.className = "status error";
-    });
+    };
+    modalVideo.addEventListener("loadedmetadata", connected);
+    modalVideo.addEventListener("error", failed);
+    modalNativeCleanup = () => {
+      modalVideo.removeEventListener("loadedmetadata", connected);
+      modalVideo.removeEventListener("error", failed);
+    };
     modalVideo.play();
   } else if (typeof Hls !== "undefined") {
     // Use hls.js for other browsers
@@ -244,6 +266,9 @@ function loadModalStream(camera) {
 
 // Close modal
 function closeModal() {
+  if (modalNativeCleanup) modalNativeCleanup();
+  modalNativeCleanup = null;
+  obsStream.detach("modal");
   const modal = document.getElementById("camera-modal");
   const modalVideo = document.getElementById("modal-video");
 
@@ -252,7 +277,7 @@ function closeModal() {
 
   // Stop video
   modalVideo.pause();
-  modalVideo.src = "";
+  modalVideo.removeAttribute("src");
 
   // Destroy HLS instance
   if (modalHls) {
