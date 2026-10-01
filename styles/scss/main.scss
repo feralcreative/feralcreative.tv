@@ -390,6 +390,11 @@ footer {
 
 // Single-feed page (montclair.tv): one tile, sized to fit the viewport
 .skyline-page {
+  .login-container h1 {
+    font-size: 1.25rem;
+    text-transform: none;
+  }
+
   .camera-grid {
     grid-template-columns: 1fr;
     align-content: center;
