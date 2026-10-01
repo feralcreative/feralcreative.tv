@@ -25,6 +25,8 @@ services:
     environment:
       - CAMERA_USER=feralcreative
       - CAMERA_PASS=@NhMM-r*nM_H@hjWeAMZt8j
+    volumes:
+      - ./data/backend-state:/app/state # feed on/off state
     ports:
       - "3001:3001"
     networks:

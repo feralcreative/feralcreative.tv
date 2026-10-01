@@ -32,6 +32,8 @@ services:
       - CAMERA_PASS=${CAMERA_PASS}
       - PORT=3001
       - TEST_MODE=${TEST_MODE:-false}
+    volumes:
+      - ./data/backend-state:/app/state # feed on/off state
     networks:
       - cats-network
 

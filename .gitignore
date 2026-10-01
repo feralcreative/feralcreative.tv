@@ -242,3 +242,6 @@ Icon?
 **/.sync-conflict*
 CONSOLE.txt
 **/_TASKS
+
+# Backend feed on/off state (holds MediaMTX path configs with camera credentials)
+data/backend-state/

@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { Cam } = require("onvif");
+const feeds = require("./feeds");
 require("dotenv").config();
 
 const app = express();
@@ -72,6 +73,9 @@ function requireAdvancedFeatures(req, res, next) {
   // TODO: Implement proper JWT verification
   next();
 }
+
+// Feed on/off state (public) and admin toggles
+feeds.register(app);
 
 // Health check
 app.get("/health", (req, res) => {
