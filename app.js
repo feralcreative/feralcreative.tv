@@ -73,7 +73,7 @@ function addCameraClickHandler(camera) {
   container.style.cursor = "pointer";
   container.addEventListener("click", (e) => {
     // Don't open modal if clicking on controls button
-    if (e.target.closest(".onvif-toggle") || e.target.closest(".onvif-controls")) {
+    if (e.target.closest(".onvif-toggle") || e.target.closest(".onvif-controls") || e.target.closest(".feed-switch")) {
       return;
     }
     openModal(camera);

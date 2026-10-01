@@ -6,7 +6,7 @@
     <title>Feed Admin</title>
     <meta name="robots" content="noindex">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20260930d">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930e">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -35,14 +35,142 @@
             <button id="sign-out" class="sign-out-btn">Sign Out</button>
         </div>
 
-        <main class="feed-admin">
-            <h1>Feeds</h1>
-            <p class="feed-admin-note">Turning a feed off stops the stream at the server, on every site that shows it.</p>
-            <ul id="feed-list" class="feed-list"></ul>
-            <p id="feed-error" class="feed-error" role="alert" hidden></p>
+        <p class="feed-admin-note">Turning a feed off stops the stream at the server, on every site that shows it.</p>
+        <p id="feed-error" class="feed-error" role="alert" hidden></p>
+
+        <main class="camera-grid">
+
+            <!-- LEFT Camera -->
+            <div class="camera-container">
+                <div class="camera-header">
+                    <h2>LEFT</h2>
+                    <button class="feed-switch" role="switch" aria-checked="true" aria-label="LEFT feed" data-feed="left" disabled></button>
+                    <span class="status" id="status-left">Connecting...</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video-left" autoplay muted playsinline></video>
+                    <div class="loading" id="loading-left">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="error" id="error-left" style="display: none;">
+                        <p>Connection failed</p>
+                        <button onclick="reconnect('left')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-left" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT Camera -->
+            <div class="camera-container">
+                <div class="camera-header">
+                    <h2>RIGHT</h2>
+                    <button class="feed-switch" role="switch" aria-checked="true" aria-label="RIGHT feed" data-feed="right" disabled></button>
+                    <span class="status" id="status-right">Connecting...</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video-right" autoplay muted playsinline></video>
+                    <div class="loading" id="loading-right">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="error" id="error-right" style="display: none;">
+                        <p>Connection failed</p>
+                        <button onclick="reconnect('right')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-right" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOP Camera -->
+            <div class="camera-container">
+                <div class="camera-header">
+                    <h2>TOP</h2>
+                    <button class="feed-switch" role="switch" aria-checked="true" aria-label="TOP feed" data-feed="top" disabled></button>
+                    <span class="status" id="status-top">Connecting...</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video-top" autoplay muted playsinline></video>
+                    <div class="loading" id="loading-top">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="error" id="error-top" style="display: none;">
+                        <p>Connection failed</p>
+                        <button onclick="reconnect('top')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-top" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional OBS camera, using the former bookshelf tile -->
+            <div class="camera-container">
+                <div class="camera-header">
+                    <h2>SKYLINE</h2>
+                    <button class="feed-switch" role="switch" aria-checked="true" aria-label="SKYLINE feed" data-feed="other" disabled></button>
+                    <span class="status offline" id="status-other">Off air</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video-other" autoplay muted playsinline></video>
+                    <div class="loading" id="loading-other" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="error" id="error-other" style="display: none;">
+                        <p>Connection failed</p>
+                        <button onclick="reconnect('other')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-other" role="status">
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>We'll be back when the camera is live.</span>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
-    <script src="./admin.js?v=1"></script>
+    <!-- Hidden until the modal opens; app.js expects it -->
+    <div id="camera-modal" class="camera-modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-header">
+                <h2 id="modal-camera-name"></h2>
+                <span class="status" id="modal-status">Connecting...</span>
+            </div>
+            <div class="modal-video-wrapper">
+                <video id="modal-video" autoplay muted playsinline></video>
+                <div class="loading" id="modal-loading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="error" id="modal-error" style="display: none;">
+                    <p>Connection failed</p>
+                    <button onclick="reconnectModal()">Retry</button>
+                </div>
+                <div class="off-air" id="modal-offair" role="status" hidden>
+                    <div class="off-air-bars" aria-hidden="true"></div>
+                    <strong>Off the air</strong>
+                    <span>We'll be back when the camera is live.</span>
+                </div>
+            </div>
+
+            <!-- ONVIF controls will be inserted here by onvif-controls.js -->
+            <div id="modal-controls-container"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="./obs-stream.js?v=1"></script>
+    <script src="./admin.js?v=2"></script>
+    <script src="./app.js?v=9"></script>
 </body>
 </html>

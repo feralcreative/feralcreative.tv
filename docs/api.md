@@ -48,7 +48,7 @@ WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `ngi
 
 ## Feed control
 
-Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`), served only by the cats server block.
+Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`, reusing `app.js` and `obs-stream.js`), the same live camera grid as the cats page with an on/off switch in each tile header, served only by the cats server block.
 
 | Method | Path | Auth | Body | Response |
 | --- | --- | --- | --- | --- |

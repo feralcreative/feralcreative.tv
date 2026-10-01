@@ -2,6 +2,9 @@
 // the backend verifies the ID token, so a fabricated dev user cannot toggle feeds.
 const TOKEN_KEY = "adminCredential";
 let memoryToken = null; // fallback when sessionStorage is unavailable
+let camerasStarted = false;
+// app.js reads `auth` for PTZ access; the admin page never shows PTZ controls.
+const auth = { hasAdvancedFeatures: () => false };
 
 function parseJwt(token) {
   const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
@@ -40,6 +43,11 @@ function showPanel(token) {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("admin-panel").hidden = false;
   document.getElementById("user-email").textContent = parseJwt(token).email;
+  if (!camerasStarted) {
+    camerasStarted = true;
+    initializeCameras();
+    setInterval(loadFeeds, 15000);
+  }
   loadFeeds();
 }
 
@@ -50,30 +58,12 @@ function showError(message) {
 }
 
 function renderFeeds(feeds) {
-  const list = document.getElementById("feed-list");
-  list.innerHTML = "";
-  for (const [key, feed] of Object.entries(feeds)) {
-    const item = document.createElement("li");
-    item.className = "feed-row";
-
-    const label = document.createElement("span");
-    label.className = "feed-name";
-    label.id = `feed-label-${key}`;
-    label.textContent = feed.name;
-
-    const state = document.createElement("span");
-    state.className = `status ${feed.enabled ? "connected" : "offline"}`;
-    state.textContent = feed.enabled ? "On" : "Off";
-
-    const toggle = document.createElement("button");
-    toggle.className = "feed-switch";
-    toggle.setAttribute("role", "switch");
+  for (const toggle of document.querySelectorAll(".feed-switch")) {
+    const feed = feeds[toggle.dataset.feed];
+    if (!feed) continue;
     toggle.setAttribute("aria-checked", String(feed.enabled));
-    toggle.setAttribute("aria-labelledby", label.id);
-    toggle.addEventListener("click", () => setFeed(key, !feed.enabled, toggle));
-
-    item.append(label, state, toggle);
-    list.append(item);
+    toggle.disabled = false;
+    toggle.classList.remove("busy");
   }
 }
 
@@ -106,6 +96,7 @@ async function setFeed(feed, enabled, toggle) {
     console.log(`[ADMIN] Turned ${feed} ${enabled ? "on" : "off"}`);
     renderFeeds(data.feeds);
     showError("");
+    pollFeeds(); // update the tile now rather than on app.js's next poll
   } catch (error) {
     console.error(`[ADMIN] Failed to turn ${feed} ${enabled ? "on" : "off"}:`, error);
     showError(`Could not turn ${feed} ${enabled ? "on" : "off"}: ${error.message}`);
@@ -128,6 +119,10 @@ window.addEventListener("load", () => {
       showPanel(response.credential);
     },
   });
+
+  for (const toggle of document.querySelectorAll(".feed-switch")) {
+    toggle.addEventListener("click", () => setFeed(toggle.dataset.feed, toggle.getAttribute("aria-checked") !== "true", toggle));
+  }
 
   document.getElementById("sign-out").addEventListener("click", () => {
     google.accounts.id.disableAutoSelect();
