@@ -45,3 +45,18 @@ WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `ngi
 ## OBS availability
 
 `GET /api/streams/other/status` returns `{ "live": true }` when MediaMTX serves the OBS HLS playlist, or `{ "live": false }` when no publisher is active. Upstream failures return HTTP 503 with `{ "live": false }`. Responses are never cached. Both OBS views use `/cam_other/index.m3u8`; there is no OBS `_low` rendition.
+
+## Feed control
+
+Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`), served only by the cats server block.
+
+| Method | Path | Auth | Body | Response |
+| --- | --- | --- | --- | --- |
+| GET | `/api/feeds` | none | — | `{ "feeds": { "<key>": { "name": "LEFT", "enabled": true } } }` |
+| PUT | `/api/feeds/<key>` | `Authorization: Bearer <Google ID token>` | `{ "enabled": false }` | same shape as GET |
+
+Feed keys are `left`, `right`, `top`, and `other`. Turning a feed off fetches each of its MediaMTX path configs (`cam_<key>` and `cam_<key>_low`, or just `cam_other`), saves them to `/app/state/feeds.json` (host `data/backend-state/`, gitignored because the configs embed camera credentials), and deletes the paths through the MediaMTX API, so MediaMTX stops pulling from the camera and HLS returns 404. Turning it on re-adds the saved configs. A reconcile loop re-deletes "off" paths every 30 seconds, because a MediaMTX restart reloads them from `mediamtx.yml`.
+
+The PUT verifies the token with `google-auth-library` against the OAuth client ID and requires a verified email matching `ADMIN_EMAILS` (default mirrors `ADVANCED_FEATURES` in `config.js`). Errors: 401 missing, expired, or invalid token; 403 not an admin; 404 unknown feed; 400 bad body; 500 MediaMTX failure. Google ID tokens last one hour, so the admin page asks you to sign in again after that. `DEV_MODE` does not apply to `/admin`.
+
+The viewer polls `GET /api/feeds` every 15 seconds and shows the off-air slate on any feed that is off.

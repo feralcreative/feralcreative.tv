@@ -4,10 +4,62 @@ const whepClients = {};
 let modalHls = null;
 let modalNativeCleanup = null;
 let currentModalCamera = null;
+// Feed on/off state from the admin panel; a missing key means on.
+let feedEnabled = {};
+let feedPoll = null;
+
+function isFeedOff(camera) {
+  return feedEnabled[camera] === false;
+}
+
+// Fetch feed state; resolves to the cameras whose state changed.
+async function refreshFeeds() {
+  try {
+    const response = await fetch("/api/feeds", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const { feeds } = await response.json();
+    const changed = cameras.filter((camera) => feeds[camera] && feeds[camera].enabled !== !isFeedOff(camera));
+    feedEnabled = Object.fromEntries(Object.entries(feeds).map(([key, feed]) => [key, feed.enabled]));
+    return changed;
+  } catch (error) {
+    console.error("[FEEDS] Could not load feed state:", error);
+    return [];
+  }
+}
+
+async function pollFeeds() {
+  const changed = await refreshFeeds();
+  for (const camera of changed) {
+    console.log(`[FEEDS] ${camera} turned ${isFeedOff(camera) ? "off" : "on"}`);
+    if (camera !== "other") await reconnect(camera);
+    if (currentModalCamera === camera) loadModalStream(camera);
+  }
+}
+
+function showFeedOff(camera) {
+  const videoElement = document.getElementById(`video-${camera}`);
+  if (whepClients[camera]) {
+    whepClients[camera].destroy();
+    delete whepClients[camera];
+  }
+  videoElement.pause();
+  videoElement.removeAttribute("src");
+  videoElement.load();
+  document.getElementById(`loading-${camera}`).style.display = "none";
+  document.getElementById(`error-${camera}`).style.display = "none";
+  document.getElementById(`offair-${camera}`).hidden = false;
+  const statusElement = document.getElementById(`status-${camera}`);
+  statusElement.textContent = "Off air";
+  statusElement.className = "status offline";
+}
 
 // Initialize all cameras
 async function initializeCameras() {
   console.log("Initializing cat cams...");
+  const adminLink = document.getElementById("admin-link");
+  if (adminLink && auth && auth.hasAdvancedFeatures()) adminLink.hidden = false;
+  await refreshFeeds();
+  if (!feedPoll) feedPoll = setInterval(pollFeeds, 15000);
   for (const camera of cameras) {
     await connectCamera(camera);
     // Make camera containers clickable
@@ -39,6 +91,12 @@ async function connectCamera(camera) {
   const loadingElement = document.getElementById(`loading-${camera}`);
   const errorElement = document.getElementById(`error-${camera}`);
 
+  if (isFeedOff(camera)) {
+    showFeedOff(camera);
+    return;
+  }
+  document.getElementById(`offair-${camera}`).hidden = true;
+
   try {
     // Show loading state
     loadingElement.style.display = "flex";
@@ -59,6 +117,8 @@ async function connectCamera(camera) {
 
 // Use HLS streaming with automatic retry logic
 async function tryHLSFallback(camera, retryCount = 0, maxRetries = 3) {
+  // A retry scheduled before the feed was switched off must not reconnect it.
+  if (isFeedOff(camera)) return;
   const videoElement = document.getElementById(`video-${camera}`);
   const statusElement = document.getElementById(`status-${camera}`);
   const loadingElement = document.getElementById(`loading-${camera}`);
@@ -207,6 +267,26 @@ function loadModalStream(camera) {
   const modalStatus = document.getElementById("modal-status");
   const modalLoading = document.getElementById("modal-loading");
   const modalError = document.getElementById("modal-error");
+  const modalOffAir = document.getElementById("modal-offair");
+
+  if (modalHls) {
+    modalHls.destroy();
+    modalHls = null;
+  }
+  modalOffAir.hidden = !isFeedOff(camera);
+  if (isFeedOff(camera)) {
+    modalVideo.pause();
+    modalVideo.removeAttribute("src");
+    modalLoading.style.display = "none";
+    modalError.style.display = "none";
+    modalStatus.textContent = "Off air";
+    modalStatus.className = "status offline";
+    return;
+  }
+  modalStatus.textContent = "Connecting...";
+  modalStatus.className = "status connecting";
+  modalLoading.style.display = "flex";
+  modalError.style.display = "none";
 
   // Use high-quality stream (stream1)
   const streamPath = `/cam_${camera}/video1_stream.m3u8`;

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Admin</title>
+    <meta name="robots" content="noindex">
+
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="./config.js?v=2"></script>
+</head>
+<body class="admin-page">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <img class="login-logo" src="/images/feral-lockup.svg" alt="Feral Creative">
+            <h1>Feed Admin</h1>
+            <p>Sign in with an admin Google account to manage the feeds.</p>
+            <div id="google-signin-button"></div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Admin Panel (shown when signed in) -->
+    <div id="admin-panel" class="container" hidden>
+        <div class="user-info-bar">
+            <a href="/" class="sign-out-btn">Cameras</a>
+            <span id="user-email" class="user-email"></span>
+            <button id="sign-out" class="sign-out-btn">Sign Out</button>
+        </div>
+
+        <main class="feed-admin">
+            <h1>Feeds</h1>
+            <p class="feed-admin-note">Turning a feed off stops the stream at the server, on every site that shows it.</p>
+            <ul id="feed-list" class="feed-list"></ul>
+            <p id="feed-error" class="feed-error" role="alert" hidden></p>
+        </main>
+    </div>
+
+    <script src="./admin.js?v=1"></script>
+</body>
+</html>

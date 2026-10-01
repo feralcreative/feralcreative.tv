@@ -76,7 +76,8 @@ Request path for a camera tile:
 3. `app.js` `tryHLSFallback` requests `/cam_<name>_low/video1_stream.m3u8` for each grid tile; `loadModalStream` requests `/cam_<name>/video1_stream.m3u8` for the expanded modal.
 4. nginx (`nginx.conf`) proxies those paths to `mediamtx:8888`, and `/api/onvif/` to `backend:3001`.
 5. mediamtx pulls RTSP from each camera per its `paths:` block in `mediamtx.yml`—`stream1` is high quality, `stream2` is low.
-6. PTZ: `onvif-controls.js` POSTs to `/api/onvif/<camera>/ptz/move` and `/ptz/stop`; `backend/server.js` translates those to ONVIF `continuousMove` and `stop` on camera port 2020.
+6. Feed on/off: `/admin` PUTs to `/api/feeds/<key>`; `backend/feeds.js` verifies the Google ID token server-side and deletes or restores that feed's MediaMTX paths through the MediaMTX API. The viewer polls `GET /api/feeds` and shows the off-air slate for any feed that is off.
+7. PTZ: `onvif-controls.js` POSTs to `/api/onvif/<camera>/ptz/move` and `/ptz/stop`; `backend/server.js` translates those to ONVIF `continuousMove` and `stop` on camera port 2020.
 
 Camera keys are `left`, `right`, `top`, and `other` in the frontend and stream paths. Only `left`, `right`, and `top` belong to the ONVIF `CAMERAS` map. Physical assignments are LEFT `.201`, RIGHT `.203`, and TOP `.202`; keep stream sources and ONVIF targets aligned. `other` is the optional OBS feed shown as SKYLINE; the old bookshelf camera at `.204` is retired. OBS uses `cam_other/index.m3u8` for both views, has no ONVIF controls, and uses `obs-stream.js` to poll `/api/streams/other/status` every four seconds. Adding or renaming a camera means checking all frontend, nginx, MediaMTX, and backend wiring.
 
@@ -105,6 +106,7 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - **The frontend is HLS-only.** `index.html` still loads the WHEP client from a CDN and `nginx.conf` still proxies `/cam_*/whep`, but no code path calls WHEP. The `whepClients` map in `app.js` holds `Hls` instances. README and older docs describing "WebRTC primary with HLS fallback" are stale.
 - **The `visibilitychange` handler reconnects every camera every time the tab is focused.** It tests `pc.connectionState` on what is actually an `Hls` instance, so the value is always `undefined`. Do not read it as evidence that WebRTC is live.
 - **`config.js` ships `DEV_MODE: true`.** It only takes effect on `localhost`/`127.0.0.1`, so production still requires Google sign-in, but any local session silently runs as an advanced user with PTZ access.
+- **Feed admin is the only server-verified endpoint.** `PUT /api/feeds/<key>` checks a Google ID token against `ADMIN_EMAILS` in `backend/feeds.js`; `/admin` always requires a real Google sign-in, even on localhost with `DEV_MODE`. Feed state lives in `data/backend-state/feeds.json` (gitignored; it holds path configs with camera credentials). See [docs/api.md](docs/api.md#feed-control).
 - **The ONVIF API is unauthenticated.** `requireAdvancedFeatures` in `backend/server.js` is a pass-through with a TODO. Anything that can reach `/api/onvif/` can move the cameras.
 - **ONVIF controls use the same-origin `/api` proxy in every environment.** Localhost requests reach the local backend through nginx; no Tailscale address or separately published backend port is required.
 - **Cameras are LAN-only** (`192.168.1.201`–`203`). Off the home network, streams cannot load at all. Set `TEST_MODE=true` in `.env` to mock PTZ; see [docs/REMOTE_TESTING.md](docs/REMOTE_TESTING.md). There is no equivalent mock for video.
@@ -130,7 +132,7 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - [docs/OBS_SETUP.md](docs/OBS_SETUP.md)—optional USB camera, OBS publishing, offline behavior, local and production RTMP publishing.
 
 - [docs/architecture.md](docs/architecture.md)—container topology, ports, stream paths, camera key wiring. Read before any cross-cutting or camera-count change.
-- [docs/api.md](docs/api.md)—ONVIF backend endpoints and mediamtx stream URLs. Read before touching `backend/server.js`, `onvif-controls.js`, or `nginx.conf`.
+- [docs/api.md](docs/api.md)—ONVIF backend endpoints, feed on/off API, and mediamtx stream URLs. Read before touching `backend/server.js`, `onvif-controls.js`, or `nginx.conf`.
 - [docs/decisions.md](docs/decisions.md)—why HLS over WebRTC, why the NAS, why client-side auth. Read before "fixing" something that looks wrong.
 - [docs/debugging.md](docs/debugging.md)—log locations, known failure modes, health checks. Read first when a stream or PTZ call fails.
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)—release process to the NAS, environments, rollback.

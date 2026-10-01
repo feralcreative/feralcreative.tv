@@ -24,11 +24,11 @@
     <link rel="manifest" href="/site.webmanifest">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/web-app-manifest-192x192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/images/web-app-manifest-512x512.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Feral Cats">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20260930b">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930d">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -69,6 +69,7 @@
 
         <!-- User Info Bar -->
         <div class="user-info-bar">
+            <a href="/admin" id="admin-link" class="sign-out-btn" hidden>Admin</a>
             <span id="user-email" class="user-email"></span>
             <button onclick="auth.signOut()" class="sign-out-btn">Sign Out</button>
         </div>
@@ -90,6 +91,11 @@
                         <p>Connection failed</p>
                         <button onclick="reconnect('left')">Retry</button>
                     </div>
+                    <div class="off-air" id="offair-left" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
+                    </div>
                 </div>
             </div>
 
@@ -108,6 +114,11 @@
                         <p>Connection failed</p>
                         <button onclick="reconnect('right')">Retry</button>
                     </div>
+                    <div class="off-air" id="offair-right" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
+                    </div>
                 </div>
             </div>
 
@@ -125,6 +136,11 @@
                     <div class="error" id="error-top" style="display: none;">
                         <p>Connection failed</p>
                         <button onclick="reconnect('top')">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-top" role="status" hidden>
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>This camera is switched off.</span>
                     </div>
                 </div>
             </div>
@@ -190,7 +206,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="./obs-stream.js?v=1"></script>
-    <script src="./app.js?v=7"></script>
+    <script src="./app.js?v=8"></script>
     <script src="./onvif-controls.js?v=5"></script>
 </body>
 </html>
