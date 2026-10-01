@@ -18,7 +18,7 @@
     <meta property="twitter:title" content="montclair.tv">
     <meta property="twitter:description" content="Live view of the Montclair skyline.">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20260930e">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930f">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -43,42 +43,29 @@
         </div>
     </div>
 
-    <!-- Stream Container (shown when authenticated) -->
-    <div id="stream-container" class="container" style="display: none;">
+    <!-- Stream Container (shown when authenticated): full-bleed video, branding in the corner -->
+    <div id="stream-container" class="skyline-stage" style="display: none;">
+        <video id="video-other" autoplay muted playsinline></video>
+        <div class="loading" id="loading-other" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+        <div class="error" id="error-other" style="display: none;">
+            <p>Connection failed</p>
+            <button onclick="obsStream.check()">Retry</button>
+        </div>
+        <div class="off-air" id="offair-other" role="status">
+            <div class="off-air-bars" aria-hidden="true"></div>
+            <strong>Off the air</strong>
+            <span>We'll be back when the camera is live.</span>
+        </div>
 
-        <!-- User Info Bar -->
-        <div class="user-info-bar">
+        <div class="skyline-bar">
+            <span class="status offline" id="status-other">Off air</span>
             <span id="user-email" class="user-email"></span>
             <button onclick="auth.signOut()" class="sign-out-btn">Sign Out</button>
         </div>
 
-        <main class="camera-grid">
-            <div class="camera-container">
-                <div class="camera-header">
-                    <h2>SKYLINE</h2>
-                    <span class="status offline" id="status-other">Off air</span>
-                </div>
-                <div class="video-wrapper">
-                    <video id="video-other" autoplay muted playsinline></video>
-                    <div class="loading" id="loading-other" style="display: none;">
-                        <div class="spinner"></div>
-                    </div>
-                    <div class="error" id="error-other" style="display: none;">
-                        <p>Connection failed</p>
-                        <button onclick="obsStream.check()">Retry</button>
-                    </div>
-                    <div class="off-air" id="offair-other" role="status">
-                        <div class="off-air-bars" aria-hidden="true"></div>
-                        <strong>Off the air</strong>
-                        <span>We'll be back when the camera is live.</span>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <footer>
-            <p>&copy; 2026 Feral Creative. All rights reserved.</p>
-        </footer>
+        <a href="https://github.com/feralcreative" target="_blank" rel="noopener noreferrer"><img class="corner" src="/images/feral-corner-bottom-right@2x.png" alt="Feral Creative"></a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
