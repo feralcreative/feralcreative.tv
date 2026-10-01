@@ -187,7 +187,8 @@ window.addEventListener("load", async () => {
   auth = new GoogleAuth();
 
   // Check if in dev mode (only works on localhost)
-  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const host = window.location.hostname;
+  const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
   console.log("[AUTH] Is localhost:", isLocalhost);
 
   if (CONFIG.DEV_MODE && isLocalhost) {

@@ -388,6 +388,23 @@ footer {
   font-size: 0.9rem;
 }
 
+// Single-feed page (montclair.tv): one tile, sized to fit the viewport
+.skyline-page {
+  .camera-grid {
+    grid-template-columns: 1fr;
+    align-content: center;
+  }
+
+  .camera-container {
+    width: min(100%, calc((100dvh - 12rem) * 16 / 9));
+    margin: 0 auto;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
 // ONVIF Controls
 @import "components/onvif-controls";
 

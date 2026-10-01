@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Montclair TV</title>
+    <meta name="description" content="Live view of the Montclair skyline.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://montclair.tv/">
+    <meta property="og:title" content="Montclair TV">
+    <meta property="og:description" content="Live view of the Montclair skyline.">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://montclair.tv/">
+    <meta property="twitter:title" content="Montclair TV">
+    <meta property="twitter:description" content="Live view of the Montclair skyline.">
+
+    <link rel="stylesheet" href="./styles/css/main.css?v=20260930b">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+
+    <!-- Google Sign-In API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Configuration and Auth -->
+    <script src="./config.js?v=2"></script>
+    <script src="./auth.js?v=3"></script>
+</head>
+<body class="skyline-page">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <img class="login-logo" src="/images/feral-lockup.svg" alt="Feral Creative">
+            <h1>Montclair TV</h1>
+            <p>Sign in with your Google account to view the stream.</p>
+            <div id="google-signin-button"></div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Stream Container (shown when authenticated) -->
+    <div id="stream-container" class="container" style="display: none;">
+
+        <!-- User Info Bar -->
+        <div class="user-info-bar">
+            <span id="user-email" class="user-email"></span>
+            <button onclick="auth.signOut()" class="sign-out-btn">Sign Out</button>
+        </div>
+
+        <main class="camera-grid">
+            <div class="camera-container">
+                <div class="camera-header">
+                    <h2>SKYLINE</h2>
+                    <span class="status offline" id="status-other">Off air</span>
+                </div>
+                <div class="video-wrapper">
+                    <video id="video-other" autoplay muted playsinline></video>
+                    <div class="loading" id="loading-other" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="error" id="error-other" style="display: none;">
+                        <p>Connection failed</p>
+                        <button onclick="obsStream.check()">Retry</button>
+                    </div>
+                    <div class="off-air" id="offair-other" role="status">
+                        <div class="off-air-bars" aria-hidden="true"></div>
+                        <strong>Off the air</strong>
+                        <span>We'll be back when the camera is live.</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Feral Creative. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="./obs-stream.js?v=1"></script>
+    <script>
+      // auth.js calls this once the viewer is signed in.
+      function initializeCameras() {
+        obsStream.attach("other");
+      }
+    </script>
+</body>
+</html>

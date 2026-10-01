@@ -14,6 +14,8 @@ Three services, one bridge network (`cats-network`). Local definitions are in `d
 
 Locally, `web` is published on 54999 and MediaMTX RTMP is bound to `127.0.0.1:1935` for OBS on this Mac only. `mediamtx` and `backend` are reachable by service name from inside the network, which is exactly how `nginx.conf` addresses them (`http://mediamtx:8888`, `http://backend:3001`).
 
+nginx has two `server` blocks: the default serves the cat grid (`index.html`) for cats.feralcreative.co, and a `montclair.tv` block (also `montclair.localhost` for local testing) serves only `skyline.html` and the `cam_other` stream and status proxies.
+
 The local compose file mounts each frontend file as a read-only volume, so HTML, JS, and CSS edits need no rebuild. It does not mount `nginx.conf`—proxy changes require `docker compose up -d --build web`.
 
 ## Ports

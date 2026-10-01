@@ -1,6 +1,6 @@
 # cats.feralcreative.co
 
-Live view of three TP-Link Tapo C211 cameras plus an optional OBS/USB camera in the SKYLINE tile. Static frontend served by nginx, RTSP→HLS conversion by mediamtx, PTZ control by a small Express/ONVIF backend. Production runs as three Docker containers on a Synology NAS behind Cloudflare.
+Live view of three TP-Link Tapo C211 cameras plus an optional OBS/USB camera in the SKYLINE tile. Static frontend served by nginx, RTSP→HLS conversion by mediamtx, PTZ control by a small Express/ONVIF backend. Production runs as three Docker containers on a Synology NAS behind Cloudflare. The same `cats-web` container also serves https://montclair.tv, a single-page view of only the SKYLINE feed (`skyline.html`), selected by nginx `server_name`.
 
 When a change makes anything in this file inaccurate—a command, a path, a convention, a prohibition—update this file in the same change.
 
@@ -113,16 +113,13 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - **`utils/deploy/hooks/pre-build.sh` and `start-docker.sh` load `.env` via `export $(cat .env | xargs)`**, which breaks on any value containing whitespace or shell metacharacters. If a credential stops working after a rotation, suspect the quoting before the credential.
 - **`/site.webmanifest` and `/images/web-app-manifest-*.png` are referenced by `index.html` but do not exist**, so every page load logs three 404s. Ignore them, or add the files; do not chase them as a regression.
 - **`npx sass` emits two `@import` deprecation warnings** from the end of `styles/scss/main.scss`. Converting them to `@use` requires moving them above all rules in the file, which reorders the emitted cascade—not a drop-in fix. The build otherwise succeeds.
+- **montclair.tv is a second nginx `server` block, not a second site.** It serves `skyline.html` for every page path, 404s `/index.html`, and proxies only `/cam_other/` and `/api/streams/other/status`—no ONVIF, no Tapo streams. The cats block is `default_server`, so any unmatched host still gets the cat grid. Locally, test it at `http://montclair.localhost:54999/`; `auth.js` treats any `*.localhost` host as localhost for `DEV_MODE`. Production also needs `https://montclair.tv` in the Google OAuth client's authorized JavaScript origins, a Cloudflare DNS record, and a NAS reverse-proxy rule for the hostname pointing at 54999. Sign-in is per-origin, so viewers sign in separately on each domain. A new static file must be added to the `Dockerfile` `COPY` list.
 - **`docs/SYNOLOGY_DEPLOYMENT.md` is template boilerplate**, referencing `npm run docker:build` and a `template-feralcreative` image that do not exist here. Use [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Commit and PR conventions
 
 - Conventional Commits, imperative mood: `type(scope): subject`. Types in use: `feat`, `fix`, `chore`, `refactor`, `docs`, `style`.
-- Never commit or push without explicit permission. Hand over a single chained one-liner and stop:
-
-  ```text
-  git add -A && git commit -m "type(scope): subject"
-  ```
+- The agent commits on the user's behalf in logical blocks (one feature, fix, or refactor step per commit). Stage paths explicitly rather than `git add -A`, because `mediamtx.yml` is tracked (see Gotchas). Pushing and deploying still need explicit permission.
 
 - Never add AI attribution to a commit message or PR body—no `Co-Authored-By`, no generated-with footer.
 - Never commit `.env`, `mediamtx.yml`, `styles/css/*`, `CONSOLE.txt`, or anything under `_TASKS/` or `_archive/`.
