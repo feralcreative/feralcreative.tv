@@ -54,12 +54,24 @@
     }
 
     nav {
+      display: flex;
+      gap: 20px;
       font-size: 14px;
       color: #aaaaaa;
     }
 
-    nav a:hover {
+    nav a:hover,
+    .tv-sign-out:hover {
       color: $color-white;
+    }
+
+    .tv-sign-out {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
     }
   }
 

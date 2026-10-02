@@ -4,20 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>feralcreative.tv</title>
-  <meta name="description" content="Feral Creative channels: Cats and Montclair.">
+  <meta name="description" content="Feral Creative channels: Cats, Montclair, and the 3D printer.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://feralcreative.tv/">
   <meta property="og:title" content="feralcreative.tv">
-  <meta property="og:description" content="Feral Creative channels: Cats and Montclair.">
-  <link rel="stylesheet" href="/styles/css/main.css?v=20261001c">
-  <script src="/channels.js?v=1" defer></script>
+  <meta property="og:description" content="Feral Creative channels: Cats, Montclair, and the 3D printer.">
+  <link rel="stylesheet" href="/styles/css/main.css?v=20261001d">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/config.js?v=3"></script>
+  <script src="/auth.js?v=3"></script>
+  <script src="/channels.js?v=2" defer></script>
 </head>
 <body class="tv-page">
-  <a class="tv-skip-link" href="#channels">Skip to channels</a>
-  <div class="tv-shell">
+  <div id="login-screen" class="login-screen">
+    <div class="login-container">
+      <img class="login-logo" src="/images/feral-lockup.svg" alt="Feral Creative">
+      <h1>feralcreative.tv</h1>
+      <p>Sign in with your Google account to see the channels.</p>
+      <div id="google-signin-button"></div>
+      <div id="error-message" class="error-message"></div>
+    </div>
+  </div>
+  <div id="stream-container" class="tv-shell" style="display: none;">
+    <a class="tv-skip-link" href="#channels">Skip to channels</a>
     <header class="tv-header">
       <h1><a href="/">feralcreative.tv</a></h1>
-      <nav aria-label="Main navigation"><a href="/admin">Admin</a></nav>
+      <nav aria-label="Main navigation">
+        <a href="/admin">Admin</a>
+        <button type="button" class="tv-sign-out" onclick="auth.signOut()">Sign out</button>
+      </nav>
     </header>
     <main id="channels" class="tv-channels" aria-labelledby="channels-title">
       <h2 id="channels-title">Channels</h2>
@@ -32,6 +47,12 @@
           <a class="tv-channel" data-channel="montclair" href="https://montclair.tv/">
             <h3>Montclair</h3>
             <span>montclair.tv</span>
+          </a>
+        </li>
+        <li>
+          <a class="tv-channel" data-channel="3d" href="https://3d.feralcreative.tv/">
+            <h3>3D Printer</h3>
+            <span>3d.feralcreative.tv</span>
           </a>
         </li>
       </ul>
