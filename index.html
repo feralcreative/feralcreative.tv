@@ -9,7 +9,10 @@
   <meta property="og:url" content="https://feralcreative.tv/">
   <meta property="og:title" content="feralcreative.tv">
   <meta property="og:description" content="Feral Creative channels: Cats, Montclair, and the 3D printer.">
-  <link rel="stylesheet" href="/styles/css/main.css?v=20261001f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/css/main.css?v=20261001g">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/config.js?v=3"></script>
   <script src="/auth.js?v=3"></script>
@@ -28,14 +31,11 @@
   <div id="stream-container" class="tv-shell" style="display: none;">
     <a class="tv-skip-link" href="#channels">Skip to channels</a>
     <header class="tv-header">
-      <h1><a href="/">feralcreative.tv</a></h1>
-      <nav aria-label="Main navigation">
-        <a href="/admin">Admin</a>
-        <button type="button" class="tv-sign-out" onclick="auth.signOut()">Sign out</button>
-      </nav>
+      <a href="https://feralcreative.co/"><img src="/images/feral-lockup.svg" alt="Feral Creative"></a>
+      <h1>feralcreative.tv</h1>
     </header>
     <main id="channels" class="tv-channels" aria-labelledby="channels-title">
-      <h2 id="channels-title">Channels</h2>
+      <h2 id="channels-title" class="sr-only">Channels</h2>
       <ul class="tv-channel-list">
         <li>
           <a class="tv-channel" data-channel="cats" href="https://cats.feralcreative.tv/">
@@ -57,6 +57,10 @@
         </li>
       </ul>
     </main>
+    <nav class="tv-dock" aria-label="Account">
+      <a href="/admin">Admin</a>
+      <button type="button" onclick="auth.signOut()">Sign out</button>
+    </nav>
   </div>
 </body>
 </html>
