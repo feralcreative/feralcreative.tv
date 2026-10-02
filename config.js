@@ -8,8 +8,7 @@ const CONFIG = {
   // Create OAuth 2.0 Client ID > Web application
   // Add authorized JavaScript origins:
   //   - http://localhost (for local development)
-  //   - https://cats.feralcreative.co (legacy cats viewer)
-  //   - https://montclair.tv (Montclair viewer)
+    //   - https://montclair.tv (Montclair viewer)
   // Migration requires separately adding the new origins before release:
   //   - https://cats.feralcreative.tv (cats viewer)
   //   - https://feralcreative.tv (feed admin)
