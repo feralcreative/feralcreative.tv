@@ -439,6 +439,16 @@ footer {
     height: auto;
     z-index: 4;
   }
+
+  // Idle: bare video, no controls, no cursor. skyline.html toggles .is-idle.
+  &.is-idle {
+    cursor: none;
+
+    .skyline-bar {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
 }
 
 .skyline-bar {
@@ -450,6 +460,7 @@ footer {
   display: flex;
   align-items: center;
   gap: 1rem;
+  transition: opacity 0.4s ease;
 
   .status {
     padding: 0.4rem 1rem;

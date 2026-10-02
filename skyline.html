@@ -18,7 +18,7 @@
     <meta property="twitter:title" content="montclair.tv">
     <meta property="twitter:description" content="Live view of the Montclair skyline.">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20261001d">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20261001e">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -76,6 +76,25 @@
       function initializeCameras() {
         obsStream.attach("other");
       }
+
+      // Hide the bar and cursor after a moment without input; any input brings them back.
+      (function () {
+        const stage = document.getElementById("stream-container");
+        const bar = stage.querySelector(".skyline-bar");
+        let timer;
+        function wake() {
+          stage.classList.remove("is-idle");
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            if (!bar.matches(":hover, :focus-within")) stage.classList.add("is-idle");
+            else wake();
+          }, 2500);
+        }
+        ["mousemove", "pointerdown", "keydown", "touchstart"].forEach((type) =>
+          document.addEventListener(type, wake, { passive: true })
+        );
+        wake();
+      })();
     </script>
     <script src="./channels.js?v=2"></script>
 </body>
