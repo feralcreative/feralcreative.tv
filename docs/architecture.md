@@ -22,11 +22,11 @@ nginx serves three experiences from the same web image. Its default server uses 
 | Cats viewer | cats.feralcreative.tv | <http://cats.localhost:54999/> | `cats.html` |
 | Montclair viewer | montclair.tv | <http://montclair.localhost:54999/> | `skyline.html` |
 
-cats.feralcreative.co remains a cats-viewer alias during migration. `/admin` on the hub and cats hosts serves the existing four-feed admin grid. The directory itself is public, lists channel names and URLs, and never requests video. Viewer sign-in remains per-origin. `channels.js` supplies canonical channel links and switches them to the matching local hostname in development; it also maps viewer links back to the local hub.
+cats.feralcreative.co 301s to cats.feralcreative.tv in nginx. 3d.feralcreative.tv is linked from the hub but served by the separate 3d repo and container. `/admin` on the hub and cats hosts serves the existing four-feed admin grid. The directory requires Google sign-in like every viewer, lists channel names and URLs, and never requests video. Viewer sign-in remains per-origin. `channels.js` supplies canonical channel links and switches them to the matching local hostname in development; it also maps viewer links back to the local hub.
 
 ### Domain migration still pending
 
-Local code is prepared for the new hostnames; it does not configure external services. Before releasing the new domains, authorize DNS and Cloudflare Tunnel ingress for feralcreative.tv and cats.feralcreative.tv to the existing web service, add `https://cats.feralcreative.tv` and `https://feralcreative.tv` to the existing Google OAuth client's JavaScript origins (the hub needs it for `/admin`), and deploy the new web image. Keep the existing cats.feralcreative.co and montclair.tv origins and ingress during migration. Do not change container names, published ports, OBS publishing settings, or `deploy.config` as part of this rename.
+Local code is prepared for the new hostnames; it does not configure external services. Before releasing the new domains, authorize DNS and Cloudflare Tunnel ingress for feralcreative.tv and cats.feralcreative.tv to the existing web service, add `https://cats.feralcreative.tv` and `https://feralcreative.tv` to the existing Google OAuth client's JavaScript origins (the hub needs it for `/admin`), and deploy the new web image. Keep the cats.feralcreative.co ingress so its 301 still reaches nginx, and keep the montclair.tv origin and ingress. Do not deploy the 301 before cats.feralcreative.tv resolves. Do not change container names, published ports, OBS publishing settings, or `deploy.config` as part of this rename.
 
 ### Adding a channel
 

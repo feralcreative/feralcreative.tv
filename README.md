@@ -1,6 +1,6 @@
 # feralcreative.tv
 
-Feral Creative's TV network: a public channel dashboard, three cat cameras with an optional SKYLINE tile, and a full-window Montclair skyline viewer. All sites share the existing nginx, MediaMTX, and Express/ONVIF stack.
+Feral Creative's TV network: a signed-in channel dashboard linking to every channel (including the separate 3d.feralcreative.tv printer cam), three cat cameras with an optional SKYLINE tile, and a full-window Montclair skyline viewer. All sites share the existing nginx, MediaMTX, and Express/ONVIF stack.
 
 ## Sites
 
@@ -11,9 +11,9 @@ Feral Creative's TV network: a public channel dashboard, three cat cameras with 
 | Montclair | <https://montclair.tv/> | <http://montclair.localhost:54999/> |
 | Feed admin | <https://feralcreative.tv/admin> | <http://localhost:54999/admin> |
 
-The new feralcreative.tv hostnames are prepared locally; external DNS, Cloudflare Tunnel ingress, OAuth origins, and deployment are still pending. The old cats.feralcreative.co host continues to serve the cats viewer. See [domain migration](docs/architecture.md#domain-migration-still-pending) before release.
+The new feralcreative.tv hostnames are prepared locally; external DNS, Cloudflare Tunnel ingress, OAuth origins, and deployment are still pending. The old cats.feralcreative.co host 301s to cats.feralcreative.tv once deployed, and the hub links to the separate 3d.feralcreative.tv printer cam. See [domain migration](docs/architecture.md#domain-migration-still-pending) before release.
 
-The directory is public. The viewers retain Google sign-in; the admin panel requires a real Google token verified by the backend, including in local development. Signing in on one domain does not sign you in on another.
+Every page, the directory included, requires Google sign-in; the admin panel requires a real Google token verified by the backend, including in local development. Signing in on one domain does not sign you in on another.
 
 ## Local development
 
