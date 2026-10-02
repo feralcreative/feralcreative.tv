@@ -7,8 +7,8 @@ const { requireAdmin } = require("./access");
 const MEDIAMTX_API = process.env.MEDIAMTX_API || "http://mediamtx:9997";
 const STATE_FILE = process.env.FEEDS_STATE_FILE || "/app/state/feeds.json";
 const RECONCILE_MS = 30000;
-// The 3d channel lives in its own repo; its proxy serves the printer cam as MJPEG.
-const THREED_STREAM_URL = process.env.THREED_STREAM_URL || "https://3dprinter.feralcreative.co/stream";
+// The 3d channel lives in its own repo; its proxy answers { live } without a session.
+const THREED_LIVE_URL = process.env.THREED_LIVE_URL || "https://3dprinter.feralcreative.co/live";
 const CHANNEL_CACHE_MS = 10000;
 
 const FEEDS = {
@@ -118,19 +118,12 @@ async function pathReady(name) {
   return Boolean(info && info.ready);
 }
 
-// Read only the response headers, then hang up so no MJPEG session stays open.
-async function streamAnswers(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+async function threeDLive() {
   try {
-    const response = await fetch(url, { signal: controller.signal });
-    const type = response.headers.get("content-type") || "";
-    return response.ok && (type.includes("multipart") || type.startsWith("image/"));
+    const response = await fetch(THREED_LIVE_URL, { signal: AbortSignal.timeout(8000) });
+    return response.ok && (await response.json()).live === true;
   } catch (error) {
     return false;
-  } finally {
-    clearTimeout(timer);
-    controller.abort();
   }
 }
 
@@ -147,7 +140,7 @@ async function channelStates() {
     settle(pathReady("cam_right_low")),
     settle(pathReady("cam_top_low")),
     settle(pathReady("cam_other")),
-    streamAnswers(THREED_STREAM_URL),
+    threeDLive(),
   ]);
   const value = {
     cats: { live: left || right || top },

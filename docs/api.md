@@ -48,7 +48,7 @@ WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `ngi
 
 ## Channel status
 
-`GET /api/channels` returns `{ "channels": { "cats": { "live": bool }, "montclair": { "live": bool }, "3d": { "live": bool } } }` for the hub's on-air lights. It is public and cached for 10 seconds in the backend. Cats is live when any of `cam_left_low`, `cam_right_low`, or `cam_top_low` is ready in MediaMTX; Montclair when `cam_other` is ready. A feed switched off in `/admin` has no MediaMTX path, so it reads as off air. 3d is live when `THREED_STREAM_URL` (default `https://3dprinter.feralcreative.co/stream`) answers 200 with an MJPEG or image content type; the backend reads only the headers and hangs up.
+`GET /api/channels` returns `{ "channels": { "cats": { "live": bool }, "montclair": { "live": bool }, "3d": { "live": bool } } }` for the hub's on-air lights. It is public and cached for 10 seconds in the backend. Cats is live when any of `cam_left_low`, `cam_right_low`, or `cam_top_low` is ready in MediaMTX; Montclair when `cam_other` is ready. A feed switched off in `/admin` has no MediaMTX path, so it reads as off air. 3d is live when `THREED_LIVE_URL` (default `https://3dprinter.feralcreative.co/live`, a public route on the 3d proxy) returns `{ "live": true }`.
 
 ## Feed control
 
