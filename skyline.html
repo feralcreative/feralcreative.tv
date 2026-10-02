@@ -18,7 +18,7 @@
     <meta property="twitter:title" content="montclair.tv">
     <meta property="twitter:description" content="Live view of the Montclair skyline.">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20260930f">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20261001c">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Configuration and Auth -->
-    <script src="./config.js?v=2"></script>
+    <script src="./config.js?v=3"></script>
     <script src="./auth.js?v=3"></script>
 </head>
 <body class="skyline-page">
@@ -60,6 +60,7 @@
         </div>
 
         <div class="skyline-bar">
+            <a href="https://feralcreative.tv/" data-tv-home class="sign-out-btn">All channels</a>
             <span class="status offline" id="status-other">Off air</span>
             <span id="user-email" class="user-email"></span>
             <button onclick="auth.signOut()" class="sign-out-btn">Sign Out</button>
@@ -76,5 +77,6 @@
         obsStream.attach("other");
       }
     </script>
+    <script src="./channels.js?v=1"></script>
 </body>
 </html>

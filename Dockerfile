@@ -5,6 +5,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy static files
 COPY index.html /usr/share/nginx/html/
+COPY cats.html /usr/share/nginx/html/
+COPY channels.js /usr/share/nginx/html/
 COPY skyline.html /usr/share/nginx/html/
 COPY admin.html /usr/share/nginx/html/
 COPY admin.js /usr/share/nginx/html/

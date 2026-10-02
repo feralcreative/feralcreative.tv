@@ -49,6 +49,8 @@ services:
       - "54999:80"
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./cats.html:/usr/share/nginx/html/cats.html:ro
+      - ./channels.js:/usr/share/nginx/html/channels.js:ro
       - ./skyline.html:/usr/share/nginx/html/skyline.html:ro
       - ./admin.html:/usr/share/nginx/html/admin.html:ro
       - ./admin.js:/usr/share/nginx/html/admin.js:ro

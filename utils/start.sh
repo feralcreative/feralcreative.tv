@@ -58,7 +58,7 @@ PORT="$PORT" node utils/open-when-ready.js &
 pids+=("$!")
 
 echo ""
-echo "[start] Cat Cams: ${URL}"
+echo "[start] Feral TV: ${URL}"
 echo "[start] Stop with Ctrl+C, or 'npm run dev:kill' if anything survives."
 echo ""
 

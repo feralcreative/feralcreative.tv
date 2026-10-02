@@ -1,6 +1,7 @@
 // Variables
 @use "sass:color";
 @use "abstracts/variables" as *;
+@use "components/tv-dashboard";
 
 $font-family: "Barlow", sans-serif;
 
@@ -505,6 +506,10 @@ footer {
 }
 
 // Feed admin panel: the camera grid with a switch in each tile header
+.admin-page #admin-panel[hidden] {
+  display: none;
+}
+
 .feed-admin-note {
   color: $color-text-muted;
   margin-bottom: 1rem;
