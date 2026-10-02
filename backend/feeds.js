@@ -14,6 +14,9 @@ const ADMINS = (process.env.ADMIN_EMAILS || "@feralcreative.co,ziadezzat@gmail.c
   .map((entry) => entry.trim().toLowerCase())
   .filter(Boolean);
 const RECONCILE_MS = 30000;
+// The 3d channel lives in its own repo; its proxy serves the printer cam as MJPEG.
+const THREED_STREAM_URL = process.env.THREED_STREAM_URL || "https://3dprinter.feralcreative.co/stream";
+const CHANNEL_CACHE_MS = 10000;
 
 const FEEDS = {
   left: { name: "LEFT", paths: ["cam_left", "cam_left_low"] },
@@ -137,6 +140,52 @@ async function requireAdmin(req, res, next) {
   }
 }
 
+// A path is on air when MediaMTX has it and its source is publishing.
+async function pathReady(name) {
+  const info = await mediamtx("GET", `/v3/paths/get/${name}`);
+  return Boolean(info && info.ready);
+}
+
+// Read only the response headers, then hang up so no MJPEG session stays open.
+async function streamAnswers(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    const type = response.headers.get("content-type") || "";
+    return response.ok && (type.includes("multipart") || type.startsWith("image/"));
+  } catch (error) {
+    return false;
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+  }
+}
+
+let channelCache = { at: 0, value: null };
+
+async function channelStates() {
+  if (channelCache.value && Date.now() - channelCache.at < CHANNEL_CACHE_MS) return channelCache.value;
+  const settle = (promise) => promise.catch((error) => {
+    console.error("[CHANNELS] Status check failed:", error.stack);
+    return false;
+  });
+  const [left, right, top, other, printer] = await Promise.all([
+    settle(pathReady("cam_left_low")),
+    settle(pathReady("cam_right_low")),
+    settle(pathReady("cam_top_low")),
+    settle(pathReady("cam_other")),
+    streamAnswers(THREED_STREAM_URL),
+  ]);
+  const value = {
+    cats: { live: left || right || top },
+    montclair: { live: other },
+    "3d": { live: printer },
+  };
+  channelCache = { at: Date.now(), value };
+  return value;
+}
+
 function register(app) {
   loadState();
   reconcile();
@@ -145,6 +194,12 @@ function register(app) {
   app.get("/api/feeds", (req, res) => {
     res.set("Cache-Control", "no-store");
     res.json({ feeds: feedStates() });
+  });
+
+  // On-air state per channel for the feralcreative.tv hub. Public, like GET /api/feeds.
+  app.get("/api/channels", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json({ channels: await channelStates() });
   });
 
   app.put("/api/feeds/:feed", requireAdmin, async (req, res) => {

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles/css/main.css?v=20261001g">
+  <link rel="stylesheet" href="/styles/css/main.css?v=20261001h">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/config.js?v=3"></script>
   <script src="/auth.js?v=3"></script>
@@ -40,19 +40,37 @@
         <li>
           <a class="tv-channel" data-channel="cats" href="https://cats.feralcreative.tv/">
             <h3>Cats</h3>
-            <span>cats.feralcreative.tv</span>
+            <span class="tv-channel-meta">
+              <span class="tv-status" data-status>
+                <i class="tv-light" aria-hidden="true"></i>
+                <span class="tv-status-label">&nbsp;</span>
+              </span>
+              <span class="tv-channel-domain">cats.feralcreative.tv</span>
+            </span>
           </a>
         </li>
         <li>
           <a class="tv-channel" data-channel="montclair" href="https://montclair.tv/">
             <h3>Montclair</h3>
-            <span>montclair.tv</span>
+            <span class="tv-channel-meta">
+              <span class="tv-status" data-status>
+                <i class="tv-light" aria-hidden="true"></i>
+                <span class="tv-status-label">&nbsp;</span>
+              </span>
+              <span class="tv-channel-domain">montclair.tv</span>
+            </span>
           </a>
         </li>
         <li>
           <a class="tv-channel" data-channel="3d" href="https://3d.feralcreative.tv/">
             <h3>3D Printer</h3>
-            <span>3d.feralcreative.tv</span>
+            <span class="tv-channel-meta">
+              <span class="tv-status" data-status>
+                <i class="tv-light" aria-hidden="true"></i>
+                <span class="tv-status-label">&nbsp;</span>
+              </span>
+              <span class="tv-channel-domain">3d.feralcreative.tv</span>
+            </span>
           </a>
         </li>
       </ul>
@@ -62,5 +80,29 @@
       <button type="button" onclick="auth.signOut()">Sign out</button>
     </nav>
   </div>
+  <script>
+    // On-air lights: poll the backend while the page is open.
+    (function () {
+      async function refresh() {
+        try {
+          const response = await fetch("/api/channels", { cache: "no-store" });
+          if (!response.ok) return;
+          const { channels } = await response.json();
+          for (const link of document.querySelectorAll("[data-channel]")) {
+            const channel = channels[link.dataset.channel];
+            const status = link.querySelector("[data-status]");
+            if (!channel || !status) continue;
+            status.classList.toggle("is-live", channel.live);
+            status.classList.add("is-known");
+            status.querySelector(".tv-status-label").textContent = channel.live ? "On air" : "Off air";
+          }
+        } catch (error) {
+          console.error("[CHANNELS] Status refresh failed:", error);
+        }
+      }
+      refresh();
+      setInterval(refresh, 15000);
+    })();
+  </script>
 </body>
 </html>

@@ -46,6 +46,10 @@ WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `ngi
 
 `GET /api/streams/other/status` returns `{ "live": true }` when MediaMTX serves the OBS HLS playlist, or `{ "live": false }` when no publisher is active. Upstream failures return HTTP 503 with `{ "live": false }`. Responses are never cached. Both OBS views use `/cam_other/index.m3u8`; there is no OBS `_low` rendition.
 
+## Channel status
+
+`GET /api/channels` returns `{ "channels": { "cats": { "live": bool }, "montclair": { "live": bool }, "3d": { "live": bool } } }` for the hub's on-air lights. It is public and cached for 10 seconds in the backend. Cats is live when any of `cam_left_low`, `cam_right_low`, or `cam_top_low` is ready in MediaMTX; Montclair when `cam_other` is ready. A feed switched off in `/admin` has no MediaMTX path, so it reads as off air. 3d is live when `THREED_STREAM_URL` (default `https://3dprinter.feralcreative.co/stream`) answers 200 with an MJPEG or image content type; the backend reads only the headers and hangs up.
+
 ## Feed control
 
 Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`, reusing `app.js` and `obs-stream.js`), the same live camera grid as the cats page with an on/off switch in each tile header, served by the shared hub/cats server block at feralcreative.tv/admin and cats.feralcreative.tv/admin. Montclair does not expose this panel or API.

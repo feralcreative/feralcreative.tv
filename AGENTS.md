@@ -69,7 +69,7 @@ Not required: any test run, any lint run, or a production deploy. Never deploy a
 
 ## Architecture
 
-Every channel, the dashboard included, requires Google sign-in. The dashboard uses the same `auth.js` gate as the viewers but loads no streams. `channels.js` maps channel links to `cats.localhost` and `montclair.localhost` during local development; production links use their canonical domains. Both viewers link back to the hub. `/admin` on the hub and cats hosts is the existing four-feed panel with server-verified Google tokens; Montclair exposes no feed-control API. The 3d channel has no local host, so it always links to production.
+Every channel, the dashboard included, requires Google sign-in. The dashboard uses the same `auth.js` gate as the viewers but loads no streams. `channels.js` maps channel links to `cats.localhost` and `montclair.localhost` during local development; production links use their canonical domains. Both viewers link back to the hub. `/admin` on the hub and cats hosts is the existing four-feed panel with server-verified Google tokens; Montclair exposes no feed-control API. The 3d channel has no local host, so it always links to production. The hub's on-air lights poll `GET /api/channels` every 15 seconds; see [docs/api.md](docs/api.md#channel-status).
 
 Request path for a camera tile:
 

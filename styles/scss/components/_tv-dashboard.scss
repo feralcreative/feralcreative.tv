@@ -148,12 +148,58 @@
       transition: color 0.3s ease;
     }
 
-    span {
+    .tv-channel-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .tv-channel-domain {
       color: rgba($color-text-soft, 0.5);
       font-size: 0.85rem;
       font-weight: 400;
       letter-spacing: 0.02em;
       transition: color 0.3s ease;
+    }
+
+    // On-air light: a lit neon bead when live, an unlit ring when not.
+    .tv-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba($color-text-soft, 0.4);
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.4s ease, color 0.4s ease;
+
+      &.is-known {
+        opacity: 1;
+      }
+
+      &.is-live {
+        color: $color-text-soft;
+
+        .tv-light {
+          background: $color-neon;
+          border-color: $color-neon;
+          box-shadow:
+            0 0 6px rgba($color-neon, 0.9),
+            0 0 18px rgba($color-neon, 0.45);
+          animation: tv-light-breathe 3.2s ease-in-out infinite;
+        }
+      }
+    }
+
+    .tv-light {
+      width: 8px;
+      height: 8px;
+      border: 1px solid rgba($color-text-soft, 0.35);
+      border-radius: 50%;
+      transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
     }
 
     // The one neon touch: a hairline that draws in under the row.
@@ -178,7 +224,7 @@
         color: $color-white;
       }
 
-      span {
+      .tv-channel-domain {
         color: rgba($color-text-soft, 0.8);
       }
 
@@ -224,6 +270,12 @@
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .tv-status.is-live .tv-light {
+      animation: none;
+    }
+  }
+
   //@ Mobile
   @media (max-width: 600px) {
     .tv-shell {
@@ -244,5 +296,21 @@
         font-size: 1.6rem;
       }
     }
+
+    .tv-channel .tv-channel-meta {
+      align-items: flex-start;
+      flex-direction: column-reverse;
+    }
+  }
+}
+
+@keyframes tv-light-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
   }
 }
