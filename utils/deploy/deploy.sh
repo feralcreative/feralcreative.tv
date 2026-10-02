@@ -251,9 +251,11 @@ prepare_nas_directories() {
     $ssh_cmd "$NAS_SSH_HOST" << EOF
 mkdir -p ${NAS_DEPLOY_PATH}/data
 mkdir -p ${NAS_DEPLOY_PATH}/logs
+mkdir -p ${NAS_DEPLOY_PATH}/data/backend-state
 chmod 755 ${NAS_DEPLOY_PATH}
 chmod 755 ${NAS_DEPLOY_PATH}/data
 chmod 755 ${NAS_DEPLOY_PATH}/logs
+chmod 700 ${NAS_DEPLOY_PATH}/data/backend-state
 EOF
 
     # Create custom directories if specified
