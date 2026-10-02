@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { Cam } = require("onvif");
+const access = require("./access");
 const feeds = require("./feeds");
 require("dotenv").config();
 
@@ -66,13 +67,11 @@ async function initializeDevices() {
   }
 }
 
-// Middleware to verify advanced features access
-function requireAdvancedFeatures(req, res, next) {
-  // In production, verify JWT token and check ADVANCED_FEATURES
-  // For now, we'll accept requests (authentication happens on frontend)
-  // TODO: Implement proper JWT verification
-  next();
-}
+// PTZ is for admins only; nginx also checks this before proxying /api/onvif/.
+const requireAdvancedFeatures = access.requireAdmin;
+
+// Sessions, the access list, and nginx's auth check
+access.register(app);
 
 // Feed on/off state (public) and admin toggles
 feeds.register(app);

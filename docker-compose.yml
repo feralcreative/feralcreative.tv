@@ -32,6 +32,8 @@ services:
       - CAMERA_PASS=${CAMERA_PASS}
       - PORT=3001
       - TEST_MODE=${TEST_MODE:-false}
+      # Local only: cookie-less requests act as this user. Set AUTH_DEV_EMAIL= (empty) in .env to test real sign-in.
+      - AUTH_DEV_EMAIL=${AUTH_DEV_EMAIL-dev@feralcreative.co}
     volumes:
       - ./data/backend-state:/app/state # feed on/off state
     networks:

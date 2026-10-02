@@ -2,17 +2,10 @@
 // stops pulling from the camera (or rejects OBS); "on" re-adds the saved config.
 const fs = require("fs");
 const path = require("path");
-const { OAuth2Client } = require("google-auth-library");
+const { requireAdmin } = require("./access");
 
 const MEDIAMTX_API = process.env.MEDIAMTX_API || "http://mediamtx:9997";
 const STATE_FILE = process.env.FEEDS_STATE_FILE || "/app/state/feeds.json";
-const GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID || "233064289536-85l4kha72ecka84gmf6f2d1bgkn3h16g.apps.googleusercontent.com";
-// Mirrors CONFIG.ADVANCED_FEATURES in config.js; override with a comma-separated ADMIN_EMAILS.
-const ADMINS = (process.env.ADMIN_EMAILS || "@feralcreative.co,ziadezzat@gmail.com,rhobbs007@gmail.com")
-  .split(",")
-  .map((entry) => entry.trim().toLowerCase())
-  .filter(Boolean);
 const RECONCILE_MS = 30000;
 // The 3d channel lives in its own repo; its proxy serves the printer cam as MJPEG.
 const THREED_STREAM_URL = process.env.THREED_STREAM_URL || "https://3dprinter.feralcreative.co/stream";
@@ -25,7 +18,6 @@ const FEEDS = {
   other: { name: "SKYLINE", paths: ["cam_other"] },
 };
 
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 const authHeader =
   "Basic " + Buffer.from(`${process.env.CAMERA_USER || ""}:${process.env.CAMERA_PASS || ""}`).toString("base64");
 
@@ -118,26 +110,6 @@ function reconcile() {
 
 function feedStates() {
   return Object.fromEntries(Object.entries(FEEDS).map(([key, feed]) => [key, { name: feed.name, enabled: !state.disabled[key] }]));
-}
-
-function isAdmin(email) {
-  const lower = email.toLowerCase();
-  return ADMINS.some((allowed) => (allowed.startsWith("@") ? lower.endsWith(allowed) : lower === allowed));
-}
-
-async function requireAdmin(req, res, next) {
-  const token = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!token) return res.status(401).json({ error: "Sign in required" });
-  try {
-    const ticket = await googleClient.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload();
-    if (!payload.email || !payload.email_verified) return res.status(401).json({ error: "Unverified Google account" });
-    if (!isAdmin(payload.email)) return res.status(403).json({ error: `${payload.email} is not an admin` });
-    req.adminEmail = payload.email;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: "Sign-in expired or invalid" });
-  }
 }
 
 // A path is on air when MediaMTX has it and its source is publishing.
