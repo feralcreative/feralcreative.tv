@@ -13,7 +13,7 @@ Feral Creative's TV network: a signed-in channel dashboard linking to every chan
 
 The new feralcreative.tv hostnames are prepared locally; external DNS, Cloudflare Tunnel ingress, OAuth origins, and deployment are still pending. The old cats.feralcreative.co host 301s to cats.feralcreative.tv once deployed, and the hub links to the separate 3d.feralcreative.tv printer cam. See [domain migration](docs/architecture.md#domain-migration-still-pending) before release.
 
-Every page, the directory included, requires Google sign-in; the admin panel requires a real Google token verified by the backend, including in local development. Signing in on one domain does not sign you in on another.
+Every page, the directory included, requires Google sign-in, and the backend enforces who may watch which channel; admins edit that list in `/admin`. Signing in on one domain does not sign you in on another.
 
 ## Local development
 

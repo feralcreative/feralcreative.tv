@@ -51,15 +51,13 @@ ffprobe "rtsp://$CAMERA_USER:$CAMERA_PASS@192.168.1.201:554/stream2"
 
 **Stale JS or CSS after a change.** nginx caches CSS and JS for an hour. Bump the `?v=` query in `index.html`, or hard-reload.
 
-**Stuck on the login screen locally.** `CONFIG.DEV_MODE` only bypasses auth on hostname `localhost` or `127.0.0.1`. A LAN IP or a tunnel hostname goes through Google, which then rejects the origin.
+**Stuck on the login screen locally.** The local backend acts as `AUTH_DEV_EMAIL` (default `dev@feralcreative.co`) only when it is set; an empty `AUTH_DEV_EMAIL=` in `.env` turns that off. A LAN IP or a tunnel hostname goes through Google, which then rejects the origin.
 
-**Signed in as the wrong user, or a stale session.** `auth.js` never revalidates the stored token. Clear it:
+**Signed in as the wrong user.** Sign out, which deletes the `fctv_session` cookie. Access changes in `/admin` apply on the next request; no sign-out is needed.
 
-```js
-localStorage.removeItem("user");
-```
+**Every stream returns 401 or 403.** nginx's `auth_request` refused it: 401 means no valid session, 403 means the signed-in email lacks that channel. Check `GET /api/session` and the list in `/admin`.
 
-**PTZ buttons do nothing.** In order: is the user in `CONFIG.ADVANCED_FEATURES`; is `cats-backend` up; did the camera connect at backend startup (`/health` lists only connected cameras); and do browser requests reach `/api/onvif/` on the same origin. Hard-refresh an older localhost page if it still targets a Tailscale address. A camera that was offline when the backend booted is never retried—restart `cats-backend`.
+**PTZ buttons do nothing.** In order: is the user an admin in `/admin`; is `cats-backend` up; did the camera connect at backend startup (`/health` lists only connected cameras); and do browser requests reach `/api/onvif/` on the same origin. Hard-refresh an older localhost page if it still targets a Tailscale address. A camera that was offline when the backend booted is never retried—restart `cats-backend`.
 
 **PTZ returns 404 for a camera that exists.** Same cause: it failed to connect at startup. Check `docker logs cats-backend` for the `[ONVIF] Failed to connect` line.
 

@@ -83,9 +83,7 @@ On deploy, `DATA_FILES="mediamtx.yml"` in `deploy.config` sends the rendered fil
 
 ## Auth flow
 
-There is no server-side session. `auth.js` decodes the Google ID token in the browser, checks the email against `CONFIG.ALLOWED_EMAILS`, and persists the whole user object—credential included—in `localStorage` under `user`. `checkSession` restores it without revalidating the token, so a stored session never expires. `hasAdvancedFeatures` gates the PTZ UI against `CONFIG.ADVANCED_FEATURES`.
-
-All of that is client-side and readable by anyone who loads the page. See [decisions.md](decisions.md) for why it is like this and what it does not protect.
+Google sign-in in the browser produces an ID token; `POST /api/session` verifies it and sets a signed session cookie. nginx calls `/api/auth/check` (`auth_request`) before every stream and PTZ request, and the backend checks the email against the access list on each call. `auth.js` uses `GET /api/session` only to decide what to show. Details: [api.md](api.md#access-and-sessions).
 
 ## Optional OBS feed
 

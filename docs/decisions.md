@@ -22,7 +22,10 @@ The grid pulls `cam_<key>_low` (camera `stream2`) and only the expanded modal pu
 
 mediamtx pulls RTSP continuously and keeps playlists warm with nobody watching, at the cost of constant RTSP traffic on the LAN and constant CPU on the NAS. The reason is TBD and not recorded anywhere in the repo; the obvious candidate is first-frame latency on the grid. Do not flip either setting to save resources without confirming that.
 
-## Client-side auth only
+## Client-side auth only (superseded 2026-10-01)
+
+Replaced by server-side sessions and an access list edited in `/admin`; see [api.md](api.md#access-and-sessions). The original reasoning is kept below.
+
 
 **Chosen:** Google Sign-In in the browser, email allowlist in `config.js`, no server-side verification.
 

@@ -25,7 +25,7 @@ Notes that bite:
 
 Errors: `404 { "error": "Camera not found or not connected" }` when the key is unknown or that camera failed to connect at startup; `500 { "error": "<onvif message>" }` on an ONVIF failure. A camera that is offline when the backend boots is never retried—restart the backend after the camera comes back.
 
-No authentication. `requireAdvancedFeatures` is a pass-through with a TODO.
+Admin session required, checked by nginx `auth_request` and again by `requireAdvancedFeatures` (`access.requireAdmin`).
 
 ## Stream paths
 
@@ -57,10 +57,28 @@ Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admi
 | Method | Path | Auth | Body | Response |
 | --- | --- | --- | --- | --- |
 | GET | `/api/feeds` | none | — | `{ "feeds": { "<key>": { "name": "LEFT", "enabled": true } } }` |
-| PUT | `/api/feeds/<key>` | `Authorization: Bearer <Google ID token>` | `{ "enabled": false }` | same shape as GET |
+| PUT | `/api/feeds/<key>` | Admin session cookie | `{ "enabled": false }` | same shape as GET |
 
 Feed keys are `left`, `right`, `top`, and `other`. Turning a feed off fetches each of its MediaMTX path configs (`cam_<key>` and `cam_<key>_low`, or just `cam_other`), saves them to `/app/state/feeds.json` (host `data/backend-state/`, gitignored because the configs embed camera credentials), and deletes the paths through the MediaMTX API, so MediaMTX stops pulling from the camera and HLS returns 404. Turning it on re-adds the saved configs. A reconcile loop re-deletes "off" paths every 30 seconds, because a MediaMTX restart reloads them from `mediamtx.yml`.
 
-The PUT verifies the token with `google-auth-library` against the OAuth client ID and requires a verified email matching `ADMIN_EMAILS` (default mirrors `ADVANCED_FEATURES` in `config.js`). Errors: 401 missing, expired, or invalid token; 403 not an admin; 404 unknown feed; 400 bad body; 500 MediaMTX failure. Google ID tokens last one hour, so the admin page asks you to sign in again after that. `DEV_MODE` does not apply to `/admin`.
+The PUT requires an admin session (see [Access and sessions](#access-and-sessions)). Errors: 401 not signed in; 403 not an admin; 404 unknown feed; 400 bad body; 500 MediaMTX failure.
 
 The viewer polls `GET /api/feeds` every 15 seconds and shows the off-air slate on any feed that is off.
+
+## Access and sessions
+
+`backend/access.js` owns the access list (`/app/state/access.json`, host `data/backend-state/`, gitignored) and the session cookie. Each entry is `{ "match": "<email or @domain>", "channels": ["cats", "montclair", "3d"], "admin": bool }`; a viewer gets the union of every matching entry, admins get every channel, and `ADMIN_EMAILS` are always admins. On first boot the list is seeded from the old `config.js` allowlist.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| POST | `/api/session` | Google ID token in `{ "credential" }` | Verify the token, refuse anyone with no channels (403), set `fctv_session` |
+| GET | `/api/session` | Cookie | `{ email, admin, channels }`, or 401 |
+| DELETE | `/api/session` | none | Clear the cookie |
+| GET | `/api/auth/check` | Cookie | nginx `auth_request` only; maps `X-Original-URI` to a channel and answers 204, 401, or 403 |
+| GET, PUT | `/api/access` | Admin cookie | Read or replace the whole list `{ "entries": [...] }` |
+| POST | `/api/access/verify` | Google ID token | For other sites (3d): `{ credential, channel }` → `{ email, admin, channels, allowed }` |
+
+The cookie is HMAC-signed with a secret generated into `/app/state/session-secret` on first boot, lasts 30 days, and carries only the email, so every check reads the current list. It is `HttpOnly`, `SameSite=Lax`, and `Secure` off localhost; on `feralcreative.tv` hosts it is scoped to the whole domain so the hub and cats share it. Deleting `session-secret` signs everyone out.
+
+Stream paths map to channels: `cam_left`, `cam_right`, and `cam_top` (and their `_low` variants) need `cats`; `cam_other` and `/api/streams/other/status` need `cats` or `montclair`, because SKYLINE also appears in the cats grid; `/api/onvif/` needs admin. `GET /api/feeds` and `GET /api/channels` stay public because they expose only on/off state.
+

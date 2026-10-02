@@ -136,5 +136,5 @@ If you must use port forwarding:
 **ONVIF controls not showing?**
 1. Check you're logged in as an advanced user
 2. Open browser console, look for `[ONVIF]` messages
-3. Verify DEV_MODE is enabled in config.js
+3. Verify `AUTH_DEV_EMAIL` is not set to empty in `.env`
 
