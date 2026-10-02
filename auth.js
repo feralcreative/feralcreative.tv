@@ -1,114 +1,64 @@
-// Google Authentication Handler for Cat Cams
+// Google sign-in for every feralcreative.tv page. The backend owns the access list:
+// signing in trades the Google token for a session cookie, and GET /api/session says
+// who you are and which channels you may watch. nginx enforces the same list on every
+// stream, so nothing here is a security boundary; it only decides what to show.
+// A page names its channel with <body data-channel="...">; the hub names none.
 class GoogleAuth {
   constructor() {
     this.user = null;
-    this.isInitialized = false;
+    this.channel = document.body.dataset.channel || null;
   }
 
-  // Initialize Google Sign-In
-  async init() {
-    return new Promise((resolve, reject) => {
-      google.accounts.id.initialize({
-        client_id: CONFIG.GOOGLE_CLIENT_ID,
-        callback: (response) => this.handleCredentialResponse(response),
-      });
+  // Restore an existing session from the cookie.
+  async restore() {
+    try {
+      const response = await fetch("/api/session", { cache: "no-store", credentials: "same-origin" });
+      if (response.ok) this.user = await response.json();
+    } catch (error) {
+      console.error("[AUTH] Could not check the session:", error);
+    }
+    return Boolean(this.user);
+  }
 
-      this.isInitialized = true;
-      resolve();
+  init() {
+    google.accounts.id.initialize({
+      client_id: CONFIG.GOOGLE_CLIENT_ID,
+      callback: (response) => this.handleCredentialResponse(response),
     });
   }
 
-  // Handle the credential response from Google
-  handleCredentialResponse(response) {
+  async handleCredentialResponse(response) {
     try {
-      // Decode the JWT token to get user info
-      const payload = this.parseJwt(response.credential);
-
-      // Check if email is allowed
-      if (!this.isEmailAllowed(payload.email)) {
-        this.showError(`Access denied. Email ${payload.email} is not authorized.`);
+      const result = await fetch("/api/session", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await result.json().catch(() => ({}));
+      if (!result.ok) {
+        this.showError(data.error || "Sign-in failed. Please try again.");
         return;
       }
-
-      // Store user info
-      this.user = {
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        credential: response.credential,
-      };
-
-      // Store in localStorage for persistent login
-      localStorage.setItem("user", JSON.stringify(this.user));
-
+      this.user = data;
       console.log(`[AUTH] User logged in: ${this.user.email}`);
-
-      // Update UI
       this.onAuthStateChanged();
     } catch (error) {
       console.error("[AUTH] Authentication error:", error);
-      this.showError("Authentication failed. Please try again.");
+      this.showError("Sign-in failed. Please try again.");
     }
   }
 
-  // Check if email is allowed based on CONFIG
-  isEmailAllowed(email) {
-    // If no restrictions, allow all
-    if (!CONFIG.ALLOWED_EMAILS || CONFIG.ALLOWED_EMAILS.length === 0) {
-      return true;
-    }
-
-    // Check against allowed emails/domains
-    return CONFIG.ALLOWED_EMAILS.some((allowed) => {
-      if (allowed.startsWith("@")) {
-        // Domain check
-        return email.endsWith(allowed);
-      } else {
-        // Exact email check
-        return email === allowed;
-      }
-    });
-  }
-
-  // Check if user has advanced features (ONVIF controls, etc.)
+  // PTZ controls and the admin link
   hasAdvancedFeatures() {
-    if (!this.user || !this.user.email) {
-      return false;
-    }
-
-    // If no advanced features list, deny all
-    if (!CONFIG.ADVANCED_FEATURES || CONFIG.ADVANCED_FEATURES.length === 0) {
-      return false;
-    }
-
-    // Check against advanced features emails/domains
-    return CONFIG.ADVANCED_FEATURES.some((allowed) => {
-      if (allowed.startsWith("@")) {
-        // Domain check
-        return this.user.email.endsWith(allowed);
-      } else {
-        // Exact email check
-        return this.user.email === allowed;
-      }
-    });
+    return Boolean(this.user && this.user.admin);
   }
 
-  // Parse JWT token
-  parseJwt(token) {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join(""),
-    );
-    return JSON.parse(jsonPayload);
+  canWatch(channel = this.channel) {
+    if (!this.user) return false;
+    return !channel || this.user.admin || this.user.channels.includes(channel);
   }
 
-  // Render the sign-in button
   renderSignInButton() {
     google.accounts.id.renderButton(document.getElementById("google-signin-button"), {
       theme: "filled_blue",
@@ -118,58 +68,53 @@ class GoogleAuth {
     });
   }
 
-  // Check if user is already signed in (from localStorage)
-  checkSession() {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      this.user = JSON.parse(storedUser);
-      console.log(`[AUTH] Session restored for: ${this.user.email}`);
-      this.onAuthStateChanged();
-      return true;
-    }
-    return false;
-  }
-
-  // Sign out
-  signOut() {
+  async signOut() {
     console.log(`[AUTH] User logged out: ${this.user?.email}`);
     this.user = null;
-    localStorage.removeItem("user");
-    google.accounts.id.disableAutoSelect();
+    try {
+      await fetch("/api/session", { method: "DELETE", credentials: "same-origin" });
+    } catch (error) {
+      console.error("[AUTH] Sign-out request failed:", error);
+    }
+    if (window.google) google.accounts.id.disableAutoSelect();
     this.onAuthStateChanged();
+    this.renderSignInButtonWhenReady();
   }
 
-  // Update UI based on auth state
+  renderSignInButtonWhenReady() {
+    if (!window.google) return;
+    this.init();
+    this.renderSignInButton();
+  }
+
   onAuthStateChanged() {
     const loginScreen = document.getElementById("login-screen");
     const streamContainer = document.getElementById("stream-container");
     const userEmail = document.getElementById("user-email");
 
-    if (this.user) {
-      // User is signed in
+    if (this.canWatch()) {
       loginScreen.style.display = "none";
       streamContainer.style.display = "block";
-      if (userEmail) {
-        userEmail.textContent = this.user.email;
-      }
+      if (userEmail) userEmail.textContent = this.user.email;
+      document.dispatchEvent(new CustomEvent("auth:user", { detail: this.user }));
+      if (typeof initializeCameras === "function") initializeCameras();
+      return;
+    }
 
-      // Initialize camera streams
-      if (typeof initializeCameras === "function") {
-        initializeCameras();
-      }
-    } else {
-      // User is signed out
-      loginScreen.style.display = "flex";
-      streamContainer.style.display = "none";
+    loginScreen.style.display = "flex";
+    streamContainer.style.display = "none";
+    if (this.user) {
+      this.showError(`${this.user.email} doesn't have access to this channel.`, true);
+      this.renderSignInButtonWhenReady();
     }
   }
 
-  // Show error message
-  showError(message) {
+  showError(message, sticky = false) {
     const errorDiv = document.getElementById("error-message");
-    if (errorDiv) {
-      errorDiv.textContent = message;
-      errorDiv.style.display = "block";
+    if (!errorDiv) return;
+    errorDiv.textContent = message;
+    errorDiv.style.display = "block";
+    if (!sticky) {
       setTimeout(() => {
         errorDiv.style.display = "none";
       }, 5000);
@@ -177,42 +122,21 @@ class GoogleAuth {
   }
 }
 
-// Initialize auth when page loads
 let auth;
 window.addEventListener("load", async () => {
-  console.log("[AUTH] Page loaded, initializing auth...");
-  console.log("[AUTH] Hostname:", window.location.hostname);
-  console.log("[AUTH] DEV_MODE:", CONFIG.DEV_MODE);
-
   auth = new GoogleAuth();
+  // Sessions used to live in localStorage; the cookie replaces them.
+  try {
+    localStorage.removeItem("user");
+  } catch (error) {}
 
-  // Check if in dev mode (only works on localhost)
-  const host = window.location.hostname;
-  const isLocalhost = host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
-  console.log("[AUTH] Is localhost:", isLocalhost);
-
-  if (CONFIG.DEV_MODE && isLocalhost) {
-    console.log("[AUTH] DEV_MODE enabled - bypassing authentication");
-    // Bypass authentication in dev mode
-    // Use an email that has advanced features access
-    auth.user = {
-      email: "dev@feralcreative.co",
-      name: "Developer (Local)",
-      picture: null,
-      credential: null,
-    };
-    console.log("[AUTH] Dev user set:", auth.user);
+  if (await auth.restore()) {
+    console.log(`[AUTH] Session restored for: ${auth.user.email}`);
     auth.onAuthStateChanged();
-    console.log("[AUTH] onAuthStateChanged called");
     return;
   }
 
-  console.log("[AUTH] Not in dev mode, checking session...");
-  // Check if already signed in
-  if (!auth.checkSession()) {
-    console.log("[AUTH] No session found, initializing Google Sign-In...");
-    // Wait for Google API to load, then initialize
-    await auth.init();
-    auth.renderSignInButton();
-  }
+  console.log("[AUTH] No session, showing Google Sign-In");
+  auth.init();
+  auth.renderSignInButton();
 });
