@@ -6,7 +6,7 @@ Why things are the way they are. Read this before "fixing" something that looks 
 
 **Chosen:** HLS via mediamtx, low-latency variant, `hls.js` in non-Safari browsers and native HLS in Safari.
 
-**Rejected:** WebRTC over WHEP, which was the original plan and is still half-wired—`index.html` loads `@eyevinn/whep-web-client`, `nginx.conf` proxies `/cam_*/whep`, and `mediamtx.yml` still enables WebRTC on 8889 with a Google STUN server.
+**Rejected:** WebRTC over WHEP, which was the original plan and is still half-wired—`cats.html` loads `@eyevinn/whep-web-client`, `nginx.conf` proxies `/cam_*/whep`, and `mediamtx.yml` still enables WebRTC on 8889 with a Google STUN server.
 
 **Why:** TBD. No commit message, task file, or doc in the repo records the reason, and the switch landed inside the squashed `updates and fixes` commit. The surviving evidence is `CONSOLE.txt`, a console dump in which every `/cam_*/whep` request 404s, and `webrtcICEHostNAT1To1IPs: []` left empty in `mediamtx.yml`—consistent with WHEP never working through the Docker bridge, but not proof. Ask before acting on that reading.
 

@@ -40,7 +40,7 @@ Served by mediamtx on 8888, proxied by nginx.
 
 `hlsAlwaysRemux: yes` in `mediamtx.yml` keeps the playlists live even with no viewer, and `sourceOnDemand: no` keeps mediamtx pulling RTSP continuously. Both are deliberate; see [decisions.md](decisions.md).
 
-WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `nginx.conf` and the WHEP client is still loaded in `index.html`, but nothing calls them.
+WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `nginx.conf` and the WHEP client is still loaded in `cats.html`, but nothing calls them.
 
 ## OBS availability
 
@@ -48,7 +48,7 @@ WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `ngi
 
 ## Feed control
 
-Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`, reusing `app.js` and `obs-stream.js`), the same live camera grid as the cats page with an on/off switch in each tile header, served only by the cats server block.
+Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admin.js`, reusing `app.js` and `obs-stream.js`), the same live camera grid as the cats page with an on/off switch in each tile header, served by the shared hub/cats server block at feralcreative.tv/admin and cats.feralcreative.tv/admin. Montclair does not expose this panel or API.
 
 | Method | Path | Auth | Body | Response |
 | --- | --- | --- | --- | --- |

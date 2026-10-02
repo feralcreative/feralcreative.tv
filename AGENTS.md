@@ -1,6 +1,6 @@
-# cats.feralcreative.co
+# feralcreative.tv
 
-Live view of three TP-Link Tapo C211 cameras plus an optional OBS/USB camera in the SKYLINE tile. Static frontend served by nginx, RTSP→HLS conversion by mediamtx, PTZ control by a small Express/ONVIF backend. Production runs as three Docker containers on a Synology NAS behind Cloudflare. The same `cats-web` container also serves https://montclair.tv, a single-page view of only the SKYLINE feed (`skyline.html`), selected by nginx `server_name`.
+Feral Creative's TV network: a public channel dashboard at feralcreative.tv (`index.html`), the cat camera grid at cats.feralcreative.tv (`cats.html`), and the full-window Montclair skyline at montclair.tv (`skyline.html`). nginx serves all three from the same `cats-web` container. RTSP→HLS conversion runs in MediaMTX; PTZ and feed administration run in the Express/ONVIF backend. Production uses three Docker containers on a Synology NAS behind Cloudflare. The new hub and cats.tv hostnames are prepared in local code; DNS, Tunnel ingress, OAuth origins, and production deployment still require explicit authorization. The old cats.feralcreative.co hostname continues to serve the cat grid during migration.
 
 When a change makes anything in this file inaccurate—a command, a path, a convention, a prohibition—update this file in the same change.
 
@@ -35,7 +35,7 @@ There is no test suite, no linter, and no typechecker. Do not invent one without
 ## Definition of done
 
 1. `npm start`. It compiles SCSS, rebuilds changed images, and opens the page for you.
-2. Confirm all three containers are up and `cats-web` reports healthy: `docker ps --filter name=cats-`.
+2. Check the directory at `http://localhost:54999/`, the grid at `http://cats.localhost:54999/`, and Montclair at `http://montclair.localhost:54999/`. Confirm all three containers are up and `cats-web` reports healthy: `docker ps --filter name=cats-`.
 3. Check the browser console. Off the camera LAN, expect RTSP failures for the three Tapo tiles and an off-air SKYLINE tile when OBS is stopped; that is not your change breaking.
 4. Tear down when finished: Ctrl+C, then `npm run dev:stop` to remove the containers.
 
@@ -69,9 +69,11 @@ Not required: any test run, any lint run, or a production deploy. Never deploy a
 
 ## Architecture
 
+The dashboard is public and does not load streams or Google auth. `channels.js` maps channel links to `cats.localhost` and `montclair.localhost` during local development; production links use their canonical domains. Both viewers link back to the hub. `/admin` on the hub and cats hosts is the existing four-feed panel with server-verified Google tokens; Montclair exposes no feed-control API. A public directory does not change viewer or backend authorization.
+
 Request path for a camera tile:
 
-1. Browser loads `index.html`, which pulls `config.js`, `auth.js`, `obs-stream.js`, `app.js`, and `onvif-controls.js` as plain scripts—no bundler, no modules, all globals.
+1. The cats viewer loads `cats.html`, which pulls `config.js`, `auth.js`, `obs-stream.js`, `app.js`, and `onvif-controls.js` as plain scripts—no bundler, no modules, all globals.
 2. `auth.js` gates everything. Cameras start only from `GoogleAuth.onAuthStateChanged`, which calls the global `initializeCameras`. On localhost with `CONFIG.DEV_MODE` true it fabricates a `dev@feralcreative.co` user and skips Google entirely.
 3. `app.js` `tryHLSFallback` requests `/cam_<name>_low/video1_stream.m3u8` for each grid tile; `loadModalStream` requests `/cam_<name>/video1_stream.m3u8` for the expanded modal.
 4. nginx (`nginx.conf`) proxies those paths to `mediamtx:8888`, and `/api/onvif/` to `backend:3001`.
@@ -93,8 +95,8 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - Backend errors return `{ "error": "<message>" }` with 404 for an unknown or unconnected camera and 500 for an ONVIF failure.
 - SCSS lives in `styles/scss/` on the 7-1 pattern. Every partial declares its own `@use "../abstracts/variables" as *`. Only use color variables that `styles/scss/abstracts/_variables.scss` actually defines.
 - Label every media query with `//@ Label` on the line above, as `main.scss` already does.
-- Most of `styles/scss/` (the `pages/`, `vendors/`, and unused `components/` partials) is unreferenced boilerplate from `template.zip`. Do not extend it; only `main.scss` and the partials it imports reach the output.
-- Bump the `?v=` query string on a changed script or stylesheet in `index.html`—nginx caches CSS and JS for an hour.
+- Most of `styles/scss/` (the `pages/`, `vendors/`, and unused `components/` partials) is unreferenced boilerplate from `template.zip`. Do not extend it; only `main.scss` and the partials it imports reach the output. The dashboard uses the explicitly imported `components/_tv-dashboard.scss`; do not use the old `pages/_dashboard.scss`.
+- Bump the `?v=` query string on a changed script or stylesheet in every HTML page that loads it—nginx caches CSS and JS for an hour.
 
 ## Gotchas
 
@@ -103,7 +105,7 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - **54999 is the host port, 80 is the container port.** nginx listens on 80; `docker-compose.yml` and `docker-compose.prod.yml` both publish it as `54999`. Do not "fix" one side to match the other. Until 2026-09-11 the local compose file published `54999:54999` and the `Dockerfile` probed 54999, so the host port served nothing and `cats-web` never went healthy; both are corrected.
 - **`docker compose up` does not compile SCSS and does not regenerate `mediamtx.yml`.** The build copies `styles/` from the working tree, and `styles/css/` is gitignored, so a fresh clone builds an unstyled site. `npm start` handles the SCSS half; `mediamtx.yml` still needs `utils/deploy/hooks/pre-build.sh`, which only `prod.sh` runs for you.
 - **MediaMTX auth is `authInternalUsers` in `mediamtx.yml.template`.** Anyone may read; the camera account (`CAMERA_USER`/`CAMERA_PASS`) may publish `cam_other` and use the API on 9997, which the backend needs for feed on/off. Changing the template means regenerating `mediamtx.yml` (`bash utils/deploy/hooks/pre-build.sh`) and restarting `cats-mediamtx`. MediaMTX still logs `skipping track 2 (G711)` per Tapo path because HLS cannot carry the cameras' G.711 audio; the site plays muted, so nothing is lost.
-- **The frontend is HLS-only.** `index.html` still loads the WHEP client from a CDN and `nginx.conf` still proxies `/cam_*/whep`, but no code path calls WHEP. The `whepClients` map in `app.js` holds `Hls` instances. README and older docs describing "WebRTC primary with HLS fallback" are stale.
+- **The frontend is HLS-only.** `cats.html` still loads the WHEP client from a CDN and `nginx.conf` still proxies `/cam_*/whep`, but no code path calls WHEP. The `whepClients` map in `app.js` holds `Hls` instances. README and older docs describing "WebRTC primary with HLS fallback" are stale.
 - **The `visibilitychange` handler reconnects every camera every time the tab is focused.** It tests `pc.connectionState` on what is actually an `Hls` instance, so the value is always `undefined`. Do not read it as evidence that WebRTC is live.
 - **`config.js` ships `DEV_MODE: true`.** It only takes effect on `localhost`/`127.0.0.1`, so production still requires Google sign-in, but any local session silently runs as an advanced user with PTZ access.
 - **Feed admin is the only server-verified endpoint.** `PUT /api/feeds/<key>` checks a Google ID token against `ADMIN_EMAILS` in `backend/feeds.js`; `/admin` always requires a real Google sign-in, even on localhost with `DEV_MODE`. Feed state lives in `data/backend-state/feeds.json` (gitignored; it holds path configs with camera credentials). See [docs/api.md](docs/api.md#feed-control).
@@ -113,9 +115,9 @@ Deeper detail: [docs/architecture.md](docs/architecture.md).
 - **ONVIF is on port 2020, not 80.** `backend/server.js` hardcodes it; Tapo firmware does not use the ONVIF default.
 - **`mediamtx.yml` is both gitignored and tracked**, so git keeps versioning it and every regeneration shows up as a diff full of credentials. Do not `git add -A` blindly in this repo—check `git status` first.
 - **`utils/deploy/hooks/pre-build.sh` and `start-docker.sh` load `.env` via `export $(cat .env | xargs)`**, which breaks on any value containing whitespace or shell metacharacters. If a credential stops working after a rotation, suspect the quoting before the credential.
-- **`/site.webmanifest` and `/images/web-app-manifest-*.png` are referenced by `index.html` but do not exist**, so every page load logs three 404s. Ignore them, or add the files; do not chase them as a regression.
+- **`/site.webmanifest` and `/images/web-app-manifest-*.png` are referenced by `cats.html` but do not exist**, so every page load logs three 404s. Ignore them, or add the files; do not chase them as a regression.
 - **`npx sass` emits two `@import` deprecation warnings** from the end of `styles/scss/main.scss`. Converting them to `@use` requires moving them above all rules in the file, which reorders the emitted cascade—not a drop-in fix. The build otherwise succeeds.
-- **montclair.tv is a second nginx `server` block, not a second site.** It serves `skyline.html` for every page path, 404s `/index.html`, and proxies only `/cam_other/` and `/api/streams/other/status`—no ONVIF, no Tapo streams. The cats block is `default_server`, so any unmatched host still gets the cat grid. Locally, test it at `http://montclair.localhost:54999/`; `auth.js` treats any `*.localhost` host as localhost for `DEV_MODE`. `www.montclair.tv` 301s to the apex (a Cloudflare redirect rule on the montclair.tv zone, with the nginx `server` block as a fallback), so only `https://montclair.tv` needs to be in the Google OAuth client's authorized JavaScript origins (project `3d-feralcreative-co`). DNS for both hostnames is a proxied CNAME to the shared Cloudflare Tunnel, whose ingress routes them to `localhost:54999` alongside `cats.feralcreative.co`; there is no DSM reverse-proxy rule. Sign-in is per-origin, so viewers sign in separately on each domain. A new static file must be added to the `Dockerfile` `COPY` list.
+- **montclair.tv is a second nginx `server` block, not a second site.** It serves `skyline.html` for every page path, 404s `/index.html`, `/cats.html`, and `/admin.html`, and proxies only `/cam_other/` and `/api/streams/other/status`—no ONVIF, no Tapo streams. The shared hub/cats block is `default_server`; its `$site_index` map serves `cats.html` on the two cats production hostnames and `cats.localhost`, and `index.html` on the hub or any unmatched host. Locally, test it at `http://montclair.localhost:54999/`; `auth.js` treats any `*.localhost` host as localhost for `DEV_MODE`. `www.montclair.tv` 301s to the apex (a Cloudflare redirect rule on the montclair.tv zone, with the nginx `server` block as a fallback), so only `https://montclair.tv` needs to be in the Google OAuth client's authorized JavaScript origins (project `3d-feralcreative-co`). DNS for both hostnames is a proxied CNAME to the shared Cloudflare Tunnel, whose ingress routes them to `localhost:54999` alongside `cats.feralcreative.co`; there is no DSM reverse-proxy rule. Sign-in is per-origin, so viewers sign in separately on each domain. A new static file must be added to the `Dockerfile` `COPY` list and the local compose volume list.
 - **`docs/SYNOLOGY_DEPLOYMENT.md` is template boilerplate**, referencing `npm run docker:build` and a `template-feralcreative` image that do not exist here. Use [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Commit and PR conventions

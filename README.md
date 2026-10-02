@@ -1,102 +1,66 @@
-# Cat Cams - cats.feralcreative.co
+# feralcreative.tv
 
-Live streaming web application displaying three TP-Link Tapo C211 cat cameras and an optional SKYLINE camera published through OBS.
+Feral Creative's TV network: a public channel dashboard, three cat cameras with an optional SKYLINE tile, and a full-window Montclair skyline viewer. All sites share the existing nginx, MediaMTX, and Express/ONVIF stack.
 
-## Tech Stack
+## Sites
 
-- **Frontend:** Vanilla HTML/CSS/JavaScript
-- **Streaming:** HLS (low-latency), via `hls.js` or native Safari HLS
-- **Media Server:** mediamtx (RTSP/RTMP to HLS converter)
-- **Web Server:** nginx
-- **Deployment:** Docker Compose on Synology NAS
+| Experience | Production URL | Local URL |
+| --- | --- | --- |
+| Channel dashboard | <https://feralcreative.tv/> | <http://localhost:54999/> |
+| Cats | <https://cats.feralcreative.tv/> | <http://cats.localhost:54999/> |
+| Montclair | <https://montclair.tv/> | <http://montclair.localhost:54999/> |
+| Feed admin | <https://feralcreative.tv/admin> | <http://localhost:54999/admin> |
 
-## Quick Start
+The new feralcreative.tv hostnames are prepared locally; external DNS, Cloudflare Tunnel ingress, OAuth origins, and deployment are still pending. The old cats.feralcreative.co host continues to serve the cats viewer. See [domain migration](docs/architecture.md#domain-migration-still-pending) before release.
 
-### Install Dependencies
+The directory is public. The viewers retain Google sign-in; the admin panel requires a real Google token verified by the backend, including in local development. Signing in on one domain does not sign you in on another.
+
+## Local development
+
+Install the root Sass dependency and backend dependencies, copy `.env.example` to `.env`, and fill in the camera account. Never commit credentials or the generated MediaMTX configuration.
 
 ```bash
 npm install
-```
-
-### Local Development
-
-The whole stack runs in Docker. There is no standalone JS dev server.
-
-```bash
-# Set up environment
+cd backend && npm install
+cd ..
 cp .env.example .env
-# Edit .env with camera credentials
-
-# Generate mediamtx.yml from the template
+# Fill in .env, then generate the MediaMTX config.
 bash utils/deploy/hooks/pre-build.sh
-
-# Compile SCSS, watch for changes, start containers, and open the browser
 npm start
-
-# Stop containers
-npm run dev:stop
 ```
 
-The Tapo cameras are on the home LAN, so their streams only load from that network. Set `TEST_MODE=true` in `.env` to mock the PTZ controls when working remotely.
+`npm start` compiles SCSS, watches styles, rebuilds the three containers, and opens the dashboard. Ctrl+C stops the stack and watcher; `npm run dev:stop` removes the containers. The Tapo cameras only load from their LAN. OBS publishes to production by default, so Montclair is normally off air locally.
 
-### Deployment
+There is no test suite, linter, or typechecker. Validate the dashboard, both viewers, browser console, and container health locally. Production deployment always requires explicit permission.
 
-Deploy to production:
+## Source files
 
-```bash
-./utils/deploy/prod.sh
-```
+| File | Role |
+| --- | --- |
+| `index.html` | Public channel dashboard |
+| `channels.js` | Production/local channel destinations and hub links |
+| `cats.html` | Existing cat camera grid |
+| `skyline.html` | Full-window Montclair viewer |
+| `admin.html`, `admin.js` | Four-feed admin grid and switches |
+| `app.js`, `obs-stream.js` | HLS playback, modal, availability/off-air behavior |
+| `config.js`, `auth.js` | Shared OAuth configuration and viewer sign-in |
+| `backend/` | Feed administration and ONVIF control |
+| `styles/scss/main.scss` | Shared styles; imports `components/_tv-dashboard.scss` |
+| `nginx.conf` | Hostname routing and same-origin stream/API proxies |
+| `Dockerfile`, `docker-compose.yml` | Static assets and local stack |
 
-## Project Structure
-
-```text
-cats.feralcreative.co/
-├── index.html              # Main HTML file
-├── app.js                  # HLS stream client and modal
-├── obs-stream.js           # Optional SKYLINE stream and off-air behavior
-├── auth.js                 # Google Sign-In and access gating
-├── config.js               # OAuth client ID and email allowlists
-├── onvif-controls.js       # PTZ control UI
-├── backend/                # Express + ONVIF PTZ proxy
-├── styles/
-│   ├── scss/              # SCSS source files
-│   └── css/               # Compiled CSS (gitignored)
-├── images/                # Static images
-├── mediamtx.yml.template  # MediaMTX config template (source of truth)
-├── mediamtx.yml           # Generated, gitignored, holds credentials
-├── nginx.conf             # Nginx configuration
-├── docker-compose.yml     # Local container orchestration
-├── docker-compose.prod.yml # Production container orchestration
-├── Dockerfile             # Nginx container build
-└── utils/deploy/          # Deployment scripts
-```
-
-## Camera Configuration
-
-4 TP-Link Tapo C211 cameras on static IPs:
-
-| Camera | Name  | IP Address    |
-| ------ | ----- | ------------- |
-| 1      | LEFT  | 192.168.1.201 |
-| 2      | RIGHT | 192.168.1.202 |
-| 3      | TOP   | 192.168.1.203 |
-| 4      | OTHER | 192.168.1.204 |
-
-## Future Roadmap
-
-- Google Auth whitelist for access
-- ONVIF Controls for Advanced Features whitelist users
+Compiled CSS and generated `mediamtx.yml` must not be edited by hand or committed. The existing container names and deployment configuration are retained. Adding a future channel is described in [architecture](docs/architecture.md#adding-a-channel).
 
 ## Documentation
 
-- **[AGENTS.md](AGENTS.md)** - Operating manual: commands, prohibitions, gotchas
-- **[docs/architecture.md](docs/architecture.md)** - Containers, ports, stream paths
-- **[docs/decisions.md](docs/decisions.md)** - Why the stack looks like this
-- **[docs/debugging.md](docs/debugging.md)** - Logs, health checks, failure modes
-- **[docs/OBS_SETUP.md](docs/OBS_SETUP.md)** - SKYLINE publishing, production destination, and off-air behavior
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Deployment guide
-- **[utils/deploy/QUICK_REFERENCE.md](utils/deploy/QUICK_REFERENCE.md)** - Deployment command reference
+- [AGENTS.md](AGENTS.md)—commands, restrictions, and operating conventions.
+- [Architecture](docs/architecture.md)—sites, containers, domain migration, and channel wiring.
+- [API](docs/api.md)—feed administration, ONVIF, and stream endpoints.
+- [Decisions](docs/decisions.md)—existing streaming and authorization choices.
+- [Debugging](docs/debugging.md)—logs and known failure modes.
+- [OBS setup](docs/OBS_SETUP.md)—publishing destinations and off-air behavior.
+- [Deployment](docs/DEPLOYMENT.md)—authorized release process.
 
 ## License
 
-Private and unlicensed (`"license": "UNLICENSED"` in `package.json`). There is no LICENSE file.
+Private and unlicensed.

@@ -14,7 +14,23 @@ Three services, one bridge network (`cats-network`). Local definitions are in `d
 
 Locally, `web` is published on 54999 and MediaMTX RTMP is bound to `127.0.0.1:1935` for OBS on this Mac only. `mediamtx` and `backend` are reachable by service name from inside the network, which is exactly how `nginx.conf` addresses them (`http://mediamtx:8888`, `http://backend:3001`).
 
-nginx has two `server` blocks: the default serves the cat grid (`index.html`) for cats.feralcreative.co, and a `montclair.tv` block (also `montclair.localhost` for local testing) serves only `skyline.html` and the `cam_other` stream and status proxies.
+nginx serves three experiences from the same web image. Its default server uses a `$site_index` host map: the hub loads `index.html`, and the cats hostnames load `cats.html`. Montclair has its own server block with only the `cam_other` stream/status proxies. A separate block redirects www.montclair.tv to the apex.
+
+| Site | Production hostname | Local URL | Page |
+| --- | --- | --- | --- |
+| Channel dashboard | feralcreative.tv | <http://localhost:54999/> | `index.html` |
+| Cats viewer | cats.feralcreative.tv | <http://cats.localhost:54999/> | `cats.html` |
+| Montclair viewer | montclair.tv | <http://montclair.localhost:54999/> | `skyline.html` |
+
+cats.feralcreative.co remains a cats-viewer alias during migration. `/admin` on the hub and cats hosts serves the existing four-feed admin grid. The directory itself is public, lists channel names and URLs, and never requests video. Viewer sign-in remains per-origin. `channels.js` supplies canonical channel links and switches them to the matching local hostname in development; it also maps viewer links back to the local hub.
+
+### Domain migration still pending
+
+Local code is prepared for the new hostnames; it does not configure external services. Before releasing the new domains, authorize DNS and Cloudflare Tunnel ingress for feralcreative.tv and cats.feralcreative.tv to the existing web service, add `https://cats.feralcreative.tv` and `https://feralcreative.tv` to the existing Google OAuth client's JavaScript origins (the hub needs it for `/admin`), and deploy the new web image. Keep the existing cats.feralcreative.co and montclair.tv origins and ingress during migration. Do not change container names, published ports, OBS publishing settings, or `deploy.config` as part of this rename.
+
+### Adding a channel
+
+Add a channel list item to `index.html` with its canonical `href` and a unique `data-channel` key. Add that key's `url` and local hostname to `TV_CHANNELS` in `channels.js`. Update the cache-busting query when editing the script. Only add links for channels with actual destinations. A new hosted viewer additionally needs nginx routing, Dockerfile copies, local compose mounts, and separately authorized domain/auth configuration.
 
 The local compose file mounts each frontend file as a read-only volume, so HTML, JS, and CSS edits need no rebuild. It does not mount `nginx.conf`—proxy changes require `docker compose up -d --build web`.
 
@@ -43,7 +59,7 @@ The frontend camera keys are `left`, `right`, `top`, and `other`. `other` now re
 
 | Place | Form |
 | --- | --- |
-| `index.html` | `#video-left`, `#status-left`, `#loading-left`, `#error-left` |
+| `cats.html` | `#video-left`, `#status-left`, `#loading-left`, `#error-left` |
 | `app.js` | the `cameras` array |
 | `mediamtx.yml.template` | `cam_left` and `cam_left_low` path blocks; OBS has only `cam_other` |
 | `nginx.conf` | the `cam_left\|cam_right\|…` location regexes and the four `/whep` blocks |
