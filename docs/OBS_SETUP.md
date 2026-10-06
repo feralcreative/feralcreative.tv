@@ -8,7 +8,7 @@ The SKYLINE tile uses the USB camera attached to the Mac through OBS. LEFT, RIGH
 USB camera → OBS (H.264/AAC) → MediaMTX (RTMP) → website (HLS)
 ```
 
-OBS publishes one rendition to `cam_other`. The grid and modal both read `/cam_other/index.m3u8`; no NAS transcoding or second encode is required. This works with either 1080p or 4K output, subject to the selected capture format and available bandwidth.
+OBS publishes one rendition to `cam_other`. MediaMTX copies its video track, without audio, to `cam_other_video`, which the grid and modal both read as `/cam_other/index.m3u8`; no NAS transcoding or second encode is required. This works with either 1080p or 4K output, subject to the selected capture format and available bandwidth.
 
 ## Port setup
 
@@ -46,7 +46,7 @@ Use the existing camera account from 1Password and percent-encode each credentia
 
 The credentials stay in OBS and the generated MediaMTX configuration. Never put them in frontend JavaScript, an OBS profile export, or documentation. The publishing path rejects a second publisher while one is already connected.
 
-Start with 1920×1080 at 30 fps, Apple VT H264 Hardware Encoder, a two-second keyframe interval, and approximately 6,000 Kbps. Use AAC if sending audio. For 4K, set both capture and output to 3840×2160 at 30 fps and measure encoder load, dropped frames, and viewer bandwidth before settling on a bitrate. Hardware encoding reduces CPU work; it does not guarantee zero load.
+Start with 1920×1080 at 30 fps, Apple VT H264 Hardware Encoder, a two-second keyframe interval, and approximately 6,000 Kbps. Audio is never served, so any audio OBS sends is discarded. For 4K, set both capture and output to 3840×2160 at 30 fps and measure encoder load, dropped frames, and viewer bandwidth before settling on a bitrate. Hardware encoding reduces CPU work; it does not guarantee zero load.
 
 Click Start Streaming to go live and Stop Streaming to go off air. Leaving OBS open without streaming also shows the off-air slate. The site checks availability every four seconds; playback startup and a stalled network connection can take longer to resolve.
 

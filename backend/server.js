@@ -86,7 +86,7 @@ app.get("/health", (req, res) => {
 app.get("/api/streams/other/status", async (req, res) => {
   res.set("Cache-Control", "no-store");
   try {
-    const response = await fetch("http://mediamtx:8888/cam_other/index.m3u8", {
+    const response = await fetch("http://mediamtx:8888/cam_other_video/index.m3u8", {
       signal: AbortSignal.timeout(2500),
     });
     if (response.status === 404) return res.json({ live: false });

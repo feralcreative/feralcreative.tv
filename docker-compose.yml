@@ -1,7 +1,7 @@
 services:
-  # MediaMTX - RTSP to WebRTC/HLS converter
+  # MediaMTX - RTSP/RTMP to video-only HLS
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:latest-ffmpeg # ffmpeg strips audio from every feed
     container_name: cats-mediamtx
     restart: unless-stopped
     ports:

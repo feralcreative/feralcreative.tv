@@ -6,13 +6,21 @@ Why things are the way they are. Read this before "fixing" something that looks 
 
 **Chosen:** HLS via mediamtx, low-latency variant, `hls.js` in non-Safari browsers and native HLS in Safari.
 
-**Rejected:** WebRTC over WHEP, which was the original plan and is still half-wired—`cats.html` loads `@eyevinn/whep-web-client`, `nginx.conf` proxies `/cam_*/whep`, and `mediamtx.yml` still enables WebRTC on 8889 with a Google STUN server.
+**Rejected:** WebRTC over WHEP, which was the original plan. Its leftovers (the `@eyevinn/whep-web-client` script, the `/cam_*/whep` proxies, and MediaMTX's WebRTC listener) were removed on 2026-10-05, because WebRTC would deliver camera audio; see [No audio](#no-audio).
 
 **Why:** TBD. No commit message, task file, or doc in the repo records the reason, and the switch landed inside the squashed `updates and fixes` commit. The surviving evidence is `CONSOLE.txt`, a console dump in which every `/cam_*/whep` request 404s, and `webrtcICEHostNAT1To1IPs: []` left empty in `mediamtx.yml`—consistent with WHEP never working through the Docker bridge, but not proof. Ask before acting on that reading.
 
 **Cost accepted:** a few seconds of latency instead of sub-second.
 
-**Do not** delete the WHEP leftovers as dead code without asking—they document the fallback path and a return to WebRTC has not been ruled out.
+Returning to WebRTC would need the audio guarantee below to hold for it too.
+
+## No audio
+
+**Chosen:** no feed on the site carries audio. ffmpeg inside the MediaMTX container republishes only each source's video track, without re-encoding; the raw OBS path is readable only from inside the container; WebRTC is off.
+
+**Rejected:** relying on muted `<video>` elements. Anyone could unmute them or pull the playlist directly, and the OBS feed carried AAC.
+
+**Why:** User's rule, set 2026-10-05: "No audio on this site."
 
 ## Low-quality streams in the grid, high-quality in the modal
 

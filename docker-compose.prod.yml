@@ -1,7 +1,7 @@
 services:
-  # MediaMTX - RTSP to WebRTC/HLS converter
+  # MediaMTX - RTSP/RTMP to video-only HLS
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:latest-ffmpeg # ffmpeg strips audio from every feed
     container_name: cats-mediamtx
     restart: unless-stopped
     volumes:
@@ -10,8 +10,6 @@ services:
       - "192.168.1.3:1936:1935" # OBS publishing on the NAS LAN; 1935 is already occupied
       - "8554:8554" # RTSP
       - "8888:8888" # HLS
-      - "8889:8889" # WebRTC
-      - "8189:8189/udp" # WebRTC ICE UDP Mux
       - "9997:9997" # API
       - "9998:9998" # Metrics
     networks:

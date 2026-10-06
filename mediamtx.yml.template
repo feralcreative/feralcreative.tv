@@ -6,8 +6,11 @@ logLevel: info
 logDestinations: [stdout]
 logFile: /dev/stdout
 
-# Authentication. Anyone may read; the camera account publishes the OBS feed
-# and drives the API (the backend uses it to turn feeds on and off).
+# Authentication. The site serves no audio, so remote readers may only read the
+# video-only paths. Raw sources with audio (cam_other) are readable only from
+# inside this container, where ffmpeg strips the audio and republishes.
+# The camera account publishes the OBS feed and drives the API (the backend
+# uses it to turn feeds on and off).
 authMethod: internal
 authInternalUsers:
   - user: any
@@ -15,7 +18,9 @@ authInternalUsers:
     ips: []
     permissions:
       - action: read
-      - action: playback
+        path: ~^cam_(left|right|top)(_low)?$
+      - action: read
+        path: cam_other_video
   - user: "${CAMERA_USER}"
     pass: "${CAMERA_PASS}"
     ips: []
@@ -27,6 +32,8 @@ authInternalUsers:
     pass:
     ips: ["127.0.0.1", "::1"]
     permissions:
+      - action: publish
+      - action: read
       - action: api
       - action: metrics
       - action: pprof
@@ -39,17 +46,10 @@ apiAddress: :9997
 metrics: yes
 metricsAddress: :9998
 
-# WebRTC settings
-webrtc: yes
-webrtcAddress: :8889
-# Allow WebRTC to work through Docker networking
-# The browser connects via localhost, so we need to advertise the host's IP
-webrtcAdditionalHosts: []
-webrtcLocalUDPAddress: :8189
-webrtcICEServers2:
-  - url: stun:stun.l.google.com:19302
+# WebRTC is off: the frontend is HLS-only, and WebRTC would carry camera audio.
+webrtc: no
 
-# HLS settings (fallback for browsers that don't support WebRTC)
+# HLS settings
 hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: yes
@@ -67,42 +67,44 @@ rtspAuthMethods: [basic]
 rtmp: yes
 rtmpAddress: :1935
 
-# Camera paths - these will be populated from environment variables
+# Every public path is video only. ffmpeg copies the video track without
+# re-encoding and drops audio (-map 0:v:0). Commands use literal path names
+# because envsubst would blank MediaMTX's $MTX_PATH variables.
 paths:
   # LEFT Camera (192.168.1.201)
   cam_left:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.201:554/stream1
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.201:554/stream1 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_left
+    runOnInitRestart: yes
 
   cam_left_low:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.201:554/stream2
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.201:554/stream2 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_left_low
+    runOnInitRestart: yes
 
   # RIGHT Camera (192.168.1.203)
   cam_right:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.203:554/stream1
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.203:554/stream1 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_right
+    runOnInitRestart: yes
 
   cam_right_low:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.203:554/stream2
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.203:554/stream2 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_right_low
+    runOnInitRestart: yes
 
   # TOP Camera (192.168.1.202)
   cam_top:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.202:554/stream1
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.202:554/stream1 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_top
+    runOnInitRestart: yes
 
   cam_top_low:
-    source: rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.202:554/stream2
-    rtspTransport: tcp
-    sourceOnDemand: no
+    runOnInit: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://${CAMERA_USER}:${CAMERA_PASS}@192.168.1.202:554/stream2 -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_top_low
+    runOnInitRestart: yes
 
-  # SKYLINE: optional USB camera published by OBS, replacing the retired bookshelf cam.
+  # SKYLINE: OBS publishes here with audio; only this container can read it.
   cam_other:
     source: publisher
     overridePublisher: no
+    runOnAvailable: ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i rtsp://127.0.0.1:8554/cam_other -map 0:v:0 -c copy -f rtsp -rtsp_transport tcp rtsp://127.0.0.1:8554/cam_other_video
+    runOnAvailableRestart: yes
+
+  # SKYLINE as served: video only. nginx maps /cam_other/ here.
+  cam_other_video:
+    source: publisher

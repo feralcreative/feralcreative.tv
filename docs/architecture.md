@@ -9,7 +9,7 @@ Three services, one bridge network (`cats-network`). Local definitions are in `d
 | Service | Container | Image | Role |
 | --- | --- | --- | --- |
 | `web` | `cats-web` | built from root `Dockerfile` | nginx: static files plus reverse proxy |
-| `mediamtx` | `cats-mediamtx` | `bluenviron/mediamtx:latest` | RTSP pull from Tapo cameras, optional RTMP publish from OBS, HLS/WebRTC serve |
+| `mediamtx` | `cats-mediamtx` | `bluenviron/mediamtx:latest-ffmpeg` | ffmpeg pulls the Tapo cameras and strips audio, optional RTMP publish from OBS, video-only HLS serve |
 | `backend` | `cats-backend` | built from `backend/Dockerfile` | Express + ONVIF PTZ proxy |
 
 Locally, `web` is published on 54999 and MediaMTX RTMP is bound to `127.0.0.1:1935` for OBS on this Mac only. `mediamtx` and `backend` are reachable by service name from inside the network, which is exactly how `nginx.conf` addresses them (`http://mediamtx:8888`, `http://backend:3001`).
@@ -43,8 +43,6 @@ The local compose file mounts each frontend file as a read-only volume, so HTML,
 | 1935 | mediamtx | RTMP container listener; dev binds `127.0.0.1:1935`, production binds `192.168.1.3:1936` |
 | 8554 | mediamtx | RTSP |
 | 8888 | mediamtx | HLS |
-| 8889 | mediamtx | WebRTC/WHEP (proxied but unused) |
-| 8189/udp | mediamtx | WebRTC ICE UDP mux |
 | 9997 | mediamtx | control API |
 | 9998 | mediamtx | metrics |
 | 3001 | backend | ONVIF HTTP API |
@@ -61,15 +59,15 @@ The frontend camera keys are `left`, `right`, `top`, and `other`. `other` now re
 | --- | --- |
 | `cats.html` | `#video-left`, `#status-left`, `#loading-left`, `#error-left` |
 | `app.js` | the `cameras` array |
-| `mediamtx.yml.template` | `cam_left` and `cam_left_low` path blocks; OBS has only `cam_other` |
-| `nginx.conf` | the `cam_left\|cam_right\|…` location regexes and the four `/whep` blocks |
+| `mediamtx.yml.template` | `cam_left` and `cam_left_low` path blocks (each an ffmpeg `runOnInit` with a literal path name); OBS has `cam_other` (raw) and `cam_other_video` (served) |
+| `nginx.conf` | the `cam_left\|cam_right\|…` location regexes |
 | `backend/server.js` | the three Tapo entries in `CAMERAS`, plus the OBS availability endpoint |
 
 `.env` additionally carries `CAMERA_LEFT_IP` and friends, though only `deploy.config`-driven tooling reads them; `mediamtx.yml.template` and `backend/server.js` both hardcode the IPs.
 
 ## Stream naming
 
-mediamtx exposes one path per camera per quality. `stream1` on the camera is high quality and maps to `cam_<key>`; `stream2` is low quality and maps to `cam_<key>_low`. The Tapo grid uses `_low`; the modal uses the high-quality path for one camera at a time. OBS publishes one H.264/AAC rendition to `cam_other`, and both OBS views use `/cam_other/index.m3u8`; MediaMTX does not generate a lower-resolution copy.
+mediamtx exposes one path per camera per quality. `stream1` on the camera is high quality and maps to `cam_<key>`; `stream2` is low quality and maps to `cam_<key>_low`. The Tapo grid uses `_low`; the modal uses the high-quality path for one camera at a time. OBS publishes one H.264/AAC rendition to `cam_other`; ffmpeg copies its video, without audio, to `cam_other_video`, and nginx serves that at `/cam_other/index.m3u8` for both OBS views. Nothing generates a lower-resolution copy.
 
 HLS playlist URL served to the browser: `/cam_<key>[_low]/video1_stream.m3u8`.
 

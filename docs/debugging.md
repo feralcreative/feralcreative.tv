@@ -25,7 +25,7 @@ docker exec cats-backend wget -qO- http://127.0.0.1:3001/health  # backend + con
 curl -s http://localhost:9997/v3/paths/list          # mediamtx paths (prod compose only)
 ```
 
-The mediamtx API is only reachable on the host with `docker-compose.prod.yml`, which publishes 9997. The local compose file publishes only the RTMP listener on loopback, and the `bluenviron/mediamtx` image has no shell, so `docker exec` into it is not an option either. Locally, read `docker logs cats-mediamtx` instead.
+The mediamtx API is only reachable on the host with `docker-compose.prod.yml`, which publishes 9997. The local compose file publishes only the RTMP listener on loopback, Locally, read `docker logs cats-mediamtx`; ffmpeg errors from the audio-stripping republishers appear there too. The `latest-ffmpeg` image includes `ffmpeg`, so `docker exec cats-mediamtx ffmpeg -i rtsp://127.0.0.1:8554/<path> -t 3 -f null -` probes a path from inside.
 
 An empty `cameras` array from the backend health check is normal off the camera LAN: `initializeDevices` runs once at startup and records only cameras that answered.
 

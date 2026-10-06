@@ -38,17 +38,17 @@ Served by mediamtx on 8888, proxied by nginx.
 
 `.m3u8` responses are proxied with no-store cache headers; `.ts` and `.mp4` segments get `max-age=10`. Both have 10s proxy read timeouts, so a stalled camera surfaces as a 504 rather than hanging.
 
-`hlsAlwaysRemux: yes` in `mediamtx.yml` keeps the playlists live even with no viewer, and `sourceOnDemand: no` keeps mediamtx pulling RTSP continuously. Both are deliberate; see [decisions.md](decisions.md).
+`hlsAlwaysRemux: yes` in `mediamtx.yml` keeps the playlists live even with no viewer, and each Tapo path's `runOnInit` ffmpeg keeps pulling RTSP continuously. Both are deliberate; see [decisions.md](decisions.md).
 
-WHEP endpoints (`/cam_<key>/whep` → `mediamtx:8889`) are still proxied in `nginx.conf` and the WHEP client is still loaded in `cats.html`, but nothing calls them.
+Every playlist is video only; see [decisions.md](decisions.md#no-audio). There are no WHEP endpoints. `/cam_other/` is served from MediaMTX's `cam_other_video` path, the audio-stripped copy of the OBS feed.
 
 ## OBS availability
 
-`GET /api/streams/other/status` returns `{ "live": true }` when MediaMTX serves the OBS HLS playlist, or `{ "live": false }` when no publisher is active. Upstream failures return HTTP 503 with `{ "live": false }`. Responses are never cached. Both OBS views use `/cam_other/index.m3u8`; there is no OBS `_low` rendition.
+`GET /api/streams/other/status` returns `{ "live": true }` when MediaMTX serves the video-only OBS playlist (`cam_other_video`), or `{ "live": false }` when no publisher is active. Upstream failures return HTTP 503 with `{ "live": false }`. Responses are never cached. Both OBS views use `/cam_other/index.m3u8`; there is no OBS `_low` rendition.
 
 ## Channel status
 
-`GET /api/channels` returns `{ "channels": { "cats": { "live": bool }, "montclair": { "live": bool }, "3d": { "live": bool } } }` for the hub's on-air lights. It is public and cached for 10 seconds in the backend. Cats is live when any of `cam_left_low`, `cam_right_low`, or `cam_top_low` is ready in MediaMTX; Montclair when `cam_other` is ready. A feed switched off in `/admin` has no MediaMTX path, so it reads as off air. 3d is live when `THREED_STREAM_URL` (default `https://3dprinter.feralcreative.co/stream`) answers 200 with an MJPEG or image content type; the backend reads only the headers and hangs up.
+`GET /api/channels` returns `{ "channels": { "cats": { "live": bool }, "montclair": { "live": bool }, "3d": { "live": bool } } }` for the hub's on-air lights. It is public and cached for 10 seconds in the backend. Cats is live when any of `cam_left_low`, `cam_right_low`, or `cam_top_low` is ready in MediaMTX; Montclair when `cam_other_video` is ready. A feed switched off in `/admin` has no MediaMTX path, so it reads as off air. 3d is live when `THREED_STREAM_URL` (default `https://3dprinter.feralcreative.co/stream`) answers 200 with an MJPEG or image content type; the backend reads only the headers and hangs up.
 
 ## Feed control
 
@@ -59,7 +59,7 @@ Implemented in `backend/feeds.js`; the admin UI is `/admin` (`admin.html`, `admi
 | GET | `/api/feeds` | none | — | `{ "feeds": { "<key>": { "name": "LEFT", "enabled": true } } }` |
 | PUT | `/api/feeds/<key>` | `Authorization: Bearer <Google ID token>` | `{ "enabled": false }` | same shape as GET |
 
-Feed keys are `left`, `right`, `top`, and `other`. Turning a feed off fetches each of its MediaMTX path configs (`cam_<key>` and `cam_<key>_low`, or just `cam_other`), saves them to `/app/state/feeds.json` (host `data/backend-state/`, gitignored because the configs embed camera credentials), and deletes the paths through the MediaMTX API, so MediaMTX stops pulling from the camera and HLS returns 404. Turning it on re-adds the saved configs. A reconcile loop re-deletes "off" paths every 30 seconds, because a MediaMTX restart reloads them from `mediamtx.yml`.
+Feed keys are `left`, `right`, `top`, and `other`. Turning a feed off fetches each of its MediaMTX path configs (`cam_<key>` and `cam_<key>_low`, or `cam_other` and `cam_other_video`), saves them to `/app/state/feeds.json` (host `data/backend-state/`, gitignored because the configs embed camera credentials), and deletes the paths through the MediaMTX API, so MediaMTX stops pulling from the camera and HLS returns 404. Turning it on re-adds the saved configs. A reconcile loop re-deletes "off" paths every 30 seconds, because a MediaMTX restart reloads them from `mediamtx.yml`.
 
 The PUT verifies the token with `google-auth-library` against the OAuth client ID and requires a verified email matching `ADMIN_EMAILS` (default mirrors `ADVANCED_FEATURES` in `config.js`). Errors: 401 missing, expired, or invalid token; 403 not an admin; 404 unknown feed; 400 bad body; 500 MediaMTX failure. Google ID tokens last one hour, so the admin page asks you to sign in again after that. `DEV_MODE` does not apply to `/admin`.
 

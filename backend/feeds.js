@@ -22,7 +22,7 @@ const FEEDS = {
   left: { name: "LEFT", paths: ["cam_left", "cam_left_low"] },
   right: { name: "RIGHT", paths: ["cam_right", "cam_right_low"] },
   top: { name: "TOP", paths: ["cam_top", "cam_top_low"] },
-  other: { name: "SKYLINE", paths: ["cam_other"] },
+  other: { name: "SKYLINE", paths: ["cam_other", "cam_other_video"] },
 };
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -174,7 +174,7 @@ async function channelStates() {
     settle(pathReady("cam_left_low")),
     settle(pathReady("cam_right_low")),
     settle(pathReady("cam_top_low")),
-    settle(pathReady("cam_other")),
+    settle(pathReady("cam_other_video")),
     streamAnswers(THREED_STREAM_URL),
   ]);
   const value = {
