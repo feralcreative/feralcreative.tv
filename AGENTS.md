@@ -64,8 +64,8 @@ Not required: any test run, any lint run, or a production deploy. Never deploy a
 | `CAMERA_USER`, `CAMERA_PASS` | `.env` | Tapo camera account (Tapo app → Settings → Advanced Settings → Camera Account), not the Tapo login |
 | `CAMERA_*_IP` | `.env` | Static LAN IPs; also hardcoded in `mediamtx.yml.template` and `backend/server.js` |
 | `TEST_MODE` | `.env` | `true` makes the backend mock all PTZ calls |
-| `RESEND_API_KEY` | `.env`, from 1Password "Resend API Key (feralcreative.tv)" | Sends emailed sign-in links; should be a sending-only key. Unset locally, where `MAGIC_LINK_DEV_LOG` logs links instead |
-| `MAIL_FROM` | `.env` | Sender for sign-in links; must be on a domain verified in Resend |
+| `RESEND_API_KEY` | NAS `/volume1/web/cats.feralcreative.co/.env`, from 1Password "Resend API (Feral Creative Send)" (`onbczqjm6w4ronuhpmqcka45eq`, `Private`) | Sending-only key for emailed sign-in links. `prod.sh` does not copy `.env`; set it on the NAS. Unset locally, where `MAGIC_LINK_DEV_LOG` logs links instead |
+| `MAIL_FROM` | NAS `.env`, as above | `Feral Creative <signin@feralcreative.co>`; `feralcreative.co` was verified in Resend on 2026-11-08 |
 | `GOOGLE_CLIENT_ID` | `config.js` | Public by design, not a secret |
 
 `.env`, `*.env`, `mediamtx.yml`, `styles/css/*`, and `CONSOLE.txt` are gitignored. Never read a file matching those into a commit, a log, or a chat response.
