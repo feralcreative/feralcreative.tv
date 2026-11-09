@@ -54,7 +54,8 @@
             body: JSON.stringify({ token }),
           });
           const data = await response.json().catch(() => ({}));
-          if (!response.ok) return fail(data.error || "Sign-in failed. Ask for a new link.");
+          // A server error means the link was not checked yet, so it can be tried again.
+          if (!response.ok) return fail(data.error || "Sign-in failed. Ask for a new link.", response.status >= 500);
           console.log(`[AUTH] Signed in with an emailed link: ${data.email}`);
           location.replace("/");
         } catch (error) {
