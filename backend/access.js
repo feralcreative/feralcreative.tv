@@ -3,10 +3,13 @@
 // Every check looks the email up in the access list, so removing someone from the
 // list takes effect on their next request. nginx asks GET /api/auth/check before it
 // serves any stream, and the admin panel edits the list through /api/access.
+// Friends without a Google account can sign in with an emailed link instead (see
+// magic-link.js) when their exact address is listed with email_link and is not an admin.
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { OAuth2Client } = require("google-auth-library");
+const magicLink = require("./magic-link");
 
 const STATE_DIR = path.dirname(process.env.FEEDS_STATE_FILE || "/app/state/feeds.json");
 const ACCESS_FILE = path.join(STATE_DIR, "access.json");
@@ -22,6 +25,17 @@ const OWNERS = (process.env.ADMIN_EMAILS || "@feralcreative.co,ziadezzat@gmail.c
 const DEV_EMAIL = (process.env.AUTH_DEV_EMAIL || "").trim().toLowerCase();
 
 const CHANNELS = ["cats", "montclair", "3d"];
+// Pages on this stack that may receive a sign-in link, and the channel each one shows.
+// The hub shows none of its own, so any channel admits a viewer there.
+const TV_HOSTS = { "feralcreative.tv": null, "cats.feralcreative.tv": "cats", "montclair.tv": "montclair" };
+const LOCAL_HOSTS = { localhost: null, "feralcreative.localhost": null, "cats.localhost": "cats", "montclair.localhost": "montclair" };
+// Local development only: let links point at the *.localhost hosts.
+const ALLOW_LOCAL_LINKS = process.env.MAGIC_LINK_ALLOW_LOCAL === "true";
+// Where the 3d site may receive links; its proxy relays requests and redemptions here.
+const THREE_D_ORIGINS = (process.env.THREE_D_ORIGINS || "https://3d.feralcreative.co,https://3d.feralcreative.tv")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const COOKIE = "fctv_session";
 const SESSION_DAYS = 30;
 
@@ -101,13 +115,46 @@ function resolve(email) {
   return { email: lower, admin, channels };
 }
 
+// What an emailed link may grant this address, or null. Only an exact entry flagged
+// email_link qualifies, and never an address that is an admin by any route (owner list,
+// an admin @domain, an admin entry), so a link can never reach the admin panel.
+function resolveLink(email) {
+  const user = resolve(email);
+  if (user.admin) return null;
+  if (!entries.some((entry) => entry.match === user.email && entry.email_link)) return null;
+  return user.channels.length ? { ...user, link: true } : null;
+}
+
+// The scheme, host and port a request was made to, if it is a page that may receive links.
+function tvOrigin(req) {
+  const hostPort = req.get("host") || "";
+  const host = hostPort.split(":")[0];
+  if (host in TV_HOSTS) return { origin: `https://${host}`, channel: TV_HOSTS[host] };
+  if (ALLOW_LOCAL_LINKS && host in LOCAL_HOSTS) return { origin: `http://${hostPort}`, channel: LOCAL_HOSTS[host] };
+  return null;
+}
+
+// A link user may open a page only if they hold its channel (or any channel, on the hub).
+function linkAllows(user, channel) {
+  return Boolean(user) && (!channel || user.channels.includes(channel));
+}
+
+// Refuse a state-changing POST that did not come from this page's own origin as JSON.
+function sameOriginJson(req, origin) {
+  const site = req.get("sec-fetch-site");
+  return req.is("application/json") && req.get("origin") === origin && (!site || site === "same-origin");
+}
+
+const EMAIL = /^[^@\s]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
 function sign(value) {
   return crypto.createHmac("sha256", secret).update(value).digest("base64url");
 }
 
-function issueCookie(req, res, email) {
+// link marks a session that began with an emailed link; it is re-checked on every request.
+function issueCookie(req, res, email, link = false) {
   const expires = Date.now() + SESSION_DAYS * 86400000;
-  const value = Buffer.from(JSON.stringify({ e: email, x: expires })).toString("base64url");
+  const value = Buffer.from(JSON.stringify(link ? { e: email, x: expires, m: 1 } : { e: email, x: expires })).toString("base64url");
   res.append("Set-Cookie", cookieHeader(req, `${value}.${sign(value)}`, SESSION_DAYS * 86400));
 }
 
@@ -125,7 +172,7 @@ function cookieHeader(req, value, maxAge) {
   return parts.join("; ");
 }
 
-function sessionEmail(req) {
+function readSession(req) {
   const raw = (req.get("cookie") || "")
     .split(";")
     .map((part) => part.trim())
@@ -134,16 +181,21 @@ function sessionEmail(req) {
     const [value, signature] = raw.slice(COOKIE.length + 1).split(".");
     const expected = sign(value || "");
     if (signature && signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-      const { e, x } = JSON.parse(Buffer.from(value, "base64url").toString());
-      if (x > Date.now()) return e;
+      const { e, x, m } = JSON.parse(Buffer.from(value, "base64url").toString());
+      if (x > Date.now()) return { email: e, link: m === 1 };
     }
   }
-  return DEV_EMAIL || null;
+  return DEV_EMAIL ? { email: DEV_EMAIL, link: false } : null;
 }
 
+// The signed-in viewer as the list stands now, or null. A session with no channels at all
+// counts as signed out, so removing someone ends their session on every page.
 function currentUser(req) {
-  const email = sessionEmail(req);
-  return email ? resolve(email) : null;
+  const session = readSession(req);
+  if (!session) return null;
+  const user = session.link ? resolveLink(session.email) : resolve(session.email);
+  if (!user || (!user.admin && user.channels.length === 0)) return null;
+  return user;
 }
 
 async function verifyGoogle(credential) {
@@ -185,7 +237,10 @@ function cleanEntries(input) {
     if (seen.has(match)) throw new Error(`${match} is listed twice`);
     seen.add(match);
     const channels = CHANNELS.filter((channel) => Array.isArray(entry.channels) && entry.channels.includes(channel));
-    return { match, channels, admin: Boolean(entry.admin) };
+    const admin = Boolean(entry.admin);
+    // Links are for single addresses that are not admins.
+    const emailLink = Boolean(entry.email_link) && !admin && !match.startsWith("@");
+    return emailLink ? { match, channels, admin, email_link: true } : { match, channels, admin };
   });
 }
 
@@ -234,9 +289,65 @@ function register(app) {
     res.status(204).end();
   });
 
-  // For other sites (3d): check a Google ID token against the list without a session here.
+  // Email a sign-in link. A tv page asks for its own origin; the 3d proxy relays with
+  // family "3d" and its origin. The answer is the same whoever asks and is sent before any
+  // lookup, so neither it nor its timing says who is on the list.
+  app.post("/api/magic-link", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const family = req.body.family === "3d" ? "3d" : "tv";
+    const target = family === "3d"
+      ? THREE_D_ORIGINS.includes(req.body.origin) && { origin: req.body.origin, channel: "3d" }
+      : tvOrigin(req);
+    if (!target) return res.status(400).json({ error: "Sign-in links are not available here." });
+    // Only this site's own pages, or the 3d proxy server to server (which sends no Origin),
+    // may ask; a browser on any other site would let it email-bomb listed friends.
+    const allowed = family === "3d" ? !req.get("origin") : sameOriginJson(req, target.origin);
+    if (!allowed) return res.status(403).json({ error: "Request refused." });
+    if (!EMAIL.test(email)) return res.status(400).json({ error: "Enter a valid email address." });
+    res.status(202).json({ message: "If that address has access, a sign-in link is on its way. It expires in 15 minutes." });
+
+    setImmediate(async () => {
+      const user = resolveLink(email);
+      if (!linkAllows(user, target.channel)) {
+        console.log(`[ACCESS] No sign-in link for ${email}: not eligible for ${target.origin}`);
+        return;
+      }
+      try {
+        await magicLink.issue(email, family, target.origin, new URL(target.origin).host);
+      } catch (error) {
+        console.error(`[ACCESS] Sign-in link for ${email} failed:`, error.stack);
+      }
+    });
+  });
+
+  // Redeem a link on a tv page: the token comes from the page's fragment as JSON.
+  app.post("/api/magic-link/redeem", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const target = tvOrigin(req);
+    if (!target || !sameOriginJson(req, target.origin)) return res.status(403).json({ error: "Sign-in refused." });
+    const email = magicLink.consume(req.body.token, "tv", target.origin);
+    const user = email && resolveLink(email);
+    if (!linkAllows(user, target.channel)) {
+      return res.status(400).json({ error: "This link has expired, was already used, or no longer has access. Ask for a new one." });
+    }
+    issueCookie(req, res, user.email, true);
+    console.log(`[ACCESS] Signed in ${user.email} with an emailed link`);
+    res.json(user);
+  });
+
+  // For other sites (3d): check a Google ID token, or consume a 3d sign-in link, against
+  // the list without a session here.
   app.post("/api/access/verify", async (req, res) => {
     res.set("Cache-Control", "no-store");
+    if (req.body.magic_token !== undefined) {
+      const channel = String(req.body.channel || "");
+      const origin = THREE_D_ORIGINS.includes(req.body.origin) ? req.body.origin : null;
+      const email = channel === "3d" && origin ? magicLink.consume(req.body.magic_token, "3d", origin) : null;
+      const user = email && resolveLink(email);
+      if (!user) return res.status(401).json({ allowed: false, error: "This link has expired or was already used." });
+      return res.json({ ...user, allowed: user.channels.includes(channel) });
+    }
     try {
       const user = resolve(await verifyGoogle(String(req.body.credential || "")));
       const channel = String(req.body.channel || "");

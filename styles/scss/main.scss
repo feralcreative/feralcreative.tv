@@ -1,5 +1,6 @@
 // Variables
 @use "sass:color";
+@use "sass:meta";
 @use "abstracts/variables" as *;
 @use "components/tv-dashboard";
 
@@ -344,6 +345,76 @@ header {
     border-radius: 8px;
     color: $color-error;
     font-size: 0.95rem;
+  }
+
+  // Emailed sign-in links, for friends without a Google account
+  .email-link-form {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid $color-gray-300;
+    text-align: left;
+
+    label {
+      display: block;
+      margin-bottom: 0.75rem;
+      color: $color-text-secondary;
+      font-size: 0.95rem;
+      text-wrap: pretty;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid $color-gray-400;
+      border-radius: 6px;
+      font: inherit;
+      color: $color-text-primary;
+    }
+  }
+
+  .email-link-row {
+    display: flex;
+    gap: 0.5rem;
+
+    //@ Phone
+    @media (max-width: 420px) {
+      flex-direction: column;
+    }
+  }
+
+  .email-link-status {
+    margin: 0.75rem 0 0;
+    font-size: 0.9rem;
+    text-wrap: pretty;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .email-link-button {
+    padding: 0.6rem 1rem;
+    background: $color-primary;
+    color: $color-white;
+    border: 0;
+    border-radius: 6px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-accent;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+
+    &[hidden] {
+      display: none;
+    }
   }
 }
 
@@ -693,10 +764,10 @@ footer {
 }
 
 // ONVIF Controls
-@import "components/onvif-controls";
+@include meta.load-css("components/onvif-controls");
 
 // Modals
-@import "components/modals";
+@include meta.load-css("components/modals");
 
 // Responsive Design
 //@ Tablet

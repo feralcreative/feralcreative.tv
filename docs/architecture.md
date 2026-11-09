@@ -83,7 +83,7 @@ On deploy, `DATA_FILES="mediamtx.yml"` in `deploy.config` sends the rendered fil
 
 ## Auth flow
 
-Google sign-in in the browser produces an ID token; `POST /api/session` verifies it and sets a signed session cookie. nginx calls `/api/auth/check` (`auth_request`) before every stream and PTZ request, and the backend checks the email against the access list on each call. `auth.js` uses `GET /api/session` only to decide what to show. Details: [api.md](api.md#access-and-sessions).
+Google sign-in in the browser produces an ID token; `POST /api/session` verifies it and sets a signed session cookie. Listed friends without Google can instead get a one-time link by email (Resend) that opens `/signin`, which sets the same cookie marked as a link session. nginx calls `/api/auth/check` (`auth_request`) before every stream and PTZ request, and the backend checks the email against the access list on each call. `auth.js` uses `GET /api/session` only to decide what to show. Details: [api.md](api.md#access-and-sessions).
 
 ## Optional OBS feed
 

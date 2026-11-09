@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <title>Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/css/main.css?v=20261108a">
+</head>
+<body class="tv-page">
+  <!-- Opened from an emailed link. Loading this page uses nothing up, so a mail scanner
+       that fetches the link first cannot spend it; only the button does. The token is in
+       the fragment, which never leaves the browser except in that POST. -->
+  <div class="login-screen">
+    <div class="login-container">
+      <img class="login-logo" src="/images/feral-lockup.svg" alt="Feral Creative">
+      <h1 id="signin-site">Sign in</h1>
+      <p id="signin-text">Finish signing in with the link from your email.</p>
+      <button type="button" id="signin-button" class="email-link-button">Sign in</button>
+      <div id="error-message" class="error-message"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const token = location.hash.slice(1);
+      history.replaceState(null, "", location.pathname);
+      const button = document.getElementById("signin-button");
+      const errorDiv = document.getElementById("error-message");
+      document.getElementById("signin-site").textContent = location.hostname;
+
+      function fail(message, retry = false) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        button.hidden = !retry;
+        button.disabled = false;
+      }
+
+      if (!token) {
+        fail("This page needs the link from your email. Ask for a new one from the sign-in page.");
+        return;
+      }
+
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const response = await fetch("/api/magic-link/redeem", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) return fail(data.error || "Sign-in failed. Ask for a new link.");
+          console.log(`[AUTH] Signed in with an emailed link: ${data.email}`);
+          location.replace("/");
+        } catch (error) {
+          console.error("[AUTH] Link sign-in failed:", error);
+          fail("Could not reach the server. Try again.", true);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-// Google sign-in for every feralcreative.tv page. The backend owns the access list:
+// Google sign-in, or an emailed link for listed friends without Google, for every
+// feralcreative.tv page. The backend owns the access list:
 // signing in trades the Google token for a session cookie, and GET /api/session says
 // who you are and which channels you may watch. nginx enforces the same list on every
 // stream, so nothing here is a security boundary; it only decides what to show.
@@ -68,6 +69,47 @@ class GoogleAuth {
     });
   }
 
+  // For listed friends without a Google account: ask the backend to email a one-time link.
+  // The answer is the same whether or not the address is on the list.
+  renderEmailLinkForm() {
+    if (document.getElementById("email-link-form")) return;
+    const anchor = document.getElementById("google-signin-button");
+    if (!anchor) return;
+    const form = document.createElement("form");
+    form.id = "email-link-form";
+    form.className = "email-link-form";
+    form.innerHTML = `
+      <label for="email-link-address">No Google account? Get a sign-in link by email.</label>
+      <div class="email-link-row">
+        <input id="email-link-address" type="email" autocomplete="email" required placeholder="you@example.com">
+        <button type="submit" class="email-link-button">Email me a link</button>
+      </div>
+      <p class="email-link-status" role="status"></p>`;
+    anchor.after(form);
+    form.addEventListener("submit", (event) => this.requestEmailLink(event, form));
+  }
+
+  async requestEmailLink(event, form) {
+    event.preventDefault();
+    const button = form.querySelector("button");
+    const status = form.querySelector(".email-link-status");
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/magic-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: form.querySelector("input").value }),
+      });
+      const data = await response.json().catch(() => ({}));
+      status.textContent = data.message || data.error || "Something went wrong. Try again.";
+    } catch (error) {
+      console.error("[AUTH] Email link request failed:", error);
+      status.textContent = "Could not reach the server. Try again.";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   async signOut() {
     console.log(`[AUTH] User logged out: ${this.user?.email}`);
     this.user = null;
@@ -82,6 +124,7 @@ class GoogleAuth {
   }
 
   renderSignInButtonWhenReady() {
+    this.renderEmailLinkForm();
     if (!window.google) return;
     this.init();
     this.renderSignInButton();
@@ -137,6 +180,7 @@ window.addEventListener("load", async () => {
   }
 
   console.log("[AUTH] No session, showing Google Sign-In");
+  auth.renderEmailLinkForm();
   auth.init();
   auth.renderSignInButton();
 });

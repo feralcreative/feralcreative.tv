@@ -23,6 +23,9 @@ services:
     container_name: cats-backend
     restart: unless-stopped
     environment:
+      # Emailed sign-in links, from the NAS .env
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - MAIL_FROM=${MAIL_FROM}
       - CAMERA_USER=feralcreative
       - CAMERA_PASS=@NhMM-r*nM_H@hjWeAMZt8j
     volumes:

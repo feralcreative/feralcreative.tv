@@ -6,7 +6,7 @@
     <title>Feed Admin / feralcreative.tv</title>
     <meta name="robots" content="noindex">
 
-    <link rel="stylesheet" href="./styles/css/main.css?v=20261001i">
+    <link rel="stylesheet" href="./styles/css/main.css?v=20261108a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -140,7 +140,7 @@
         <!-- Access list: who may sign in, and to which channels -->
         <section class="access-admin" aria-labelledby="access-title">
             <h2 id="access-title">Access</h2>
-            <p class="feed-admin-note">One row per email or @domain. Changes save as you make them and apply on the viewer's next request. <span id="access-owners"></span></p>
+            <p class="feed-admin-note">One row per email or @domain. Changes save as you make them and apply on the viewer's next request. Tick Email link for a friend without a Google account. <span id="access-owners"></span></p>
             <p id="access-error" class="feed-error" role="alert" hidden></p>
             <div class="access-scroll">
                 <table class="access-table">
@@ -151,6 +151,7 @@
                             <th scope="col">Montclair</th>
                             <th scope="col">3D</th>
                             <th scope="col">Admin</th>
+                            <th scope="col"><abbr title="May sign in with a one-time link emailed to them, for people without a Google account. Single addresses only, never admins.">Email link</abbr></th>
                             <th scope="col"><span class="sr-only">Remove</span></th>
                         </tr>
                     </thead>
@@ -198,7 +199,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="./obs-stream.js?v=1"></script>
-    <script src="./admin.js?v=3"></script>
+    <script src="./admin.js?v=4"></script>
     <script src="./app.js?v=9"></script>
     <script src="./channels.js?v=2"></script>
 </body>

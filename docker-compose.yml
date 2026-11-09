@@ -34,6 +34,12 @@ services:
       - TEST_MODE=${TEST_MODE:-false}
       # Local only: cookie-less requests act as this user. Set AUTH_DEV_EMAIL= (empty) in .env to test real sign-in.
       - AUTH_DEV_EMAIL=${AUTH_DEV_EMAIL-dev@feralcreative.co}
+      # Emailed sign-in links. Without a Resend key, MAGIC_LINK_DEV_LOG writes each link to
+      # the backend log instead; *.localhost hosts may receive links only here.
+      - RESEND_API_KEY=${RESEND_API_KEY-}
+      - MAIL_FROM=${MAIL_FROM-}
+      - MAGIC_LINK_DEV_LOG=${MAGIC_LINK_DEV_LOG-true}
+      - MAGIC_LINK_ALLOW_LOCAL=true
     volumes:
       - ./data/backend-state:/app/state # feed on/off state
     networks:
@@ -56,6 +62,7 @@ services:
       - ./skyline.html:/usr/share/nginx/html/skyline.html:ro
       - ./admin.html:/usr/share/nginx/html/admin.html:ro
       - ./admin.js:/usr/share/nginx/html/admin.js:ro
+      - ./signin.html:/usr/share/nginx/html/signin.html:ro
       - ./app.js:/usr/share/nginx/html/app.js:ro
       - ./obs-stream.js:/usr/share/nginx/html/obs-stream.js:ro
       - ./auth.js:/usr/share/nginx/html/auth.js:ro
