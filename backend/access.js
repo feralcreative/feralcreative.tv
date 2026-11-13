@@ -3,9 +3,10 @@
 // Every check looks the email up in the access list, so removing someone from the
 // list takes effect on their next request. nginx asks GET /api/auth/check before it
 // serves any stream, and the admin panel edits the list through /api/access.
-// Friends without a Google account can sign in with an emailed link instead (see
-// magic-link.js) when their exact address is listed with email_link and is not an admin.
-// From such a session they can add a Google account once; it is stored on their entry as
+// Anyone on the list can sign in with an emailed link instead (see magic-link.js), whether
+// they match an exact entry or an @domain. A link session is never an admin: an admin who
+// signs in by link gets every channel as a viewer, and the admin panel still needs Google.
+// From a link session a non-admin with an exact entry can add a Google account once; it is stored on their entry as
 // google: { sub, email, added } and signs them in as the listed address from then on.
 // Sign-in happens at the hub for every site: another site sends an unsigned visitor here
 // with ?return=<its origin>&challenge=<hash>, and the hub hands the session back as a
@@ -133,15 +134,16 @@ function resolve(email) {
   return { email: lower, admin, channels };
 }
 
-// What an emailed link may grant this address, or null. Only an exact entry flagged
-// email_link qualifies, and never an address that is an admin by any route (owner list,
-// an admin @domain, an admin entry), so a link can never reach the admin panel.
+// What an emailed link may grant this address, or null. Anyone the list gives a channel
+// qualifies, by an exact entry or an @domain. admin is always false here, whatever route
+// (owner list, an admin @domain, an admin entry) makes the address one, so a link can
+// never reach the admin panel; an admin keeps every channel as a viewer.
 function resolveLink(email) {
   const user = resolve(email);
-  if (user.admin) return null;
-  const entry = entries.find((candidate) => candidate.match === user.email && candidate.email_link);
-  if (!entry || !user.channels.length) return null;
-  return entry.google ? { ...user, link: true, google: entry.google.email } : { ...user, link: true };
+  if (!user.channels.length) return null;
+  const entry = entries.find((candidate) => candidate.match === user.email);
+  const viewer = { ...user, admin: false, link: true };
+  return entry && entry.google && !user.admin ? { ...viewer, google: entry.google.email } : viewer;
 }
 
 // What a Google account added to an entry may do, or null. The entry must still hold that
@@ -306,6 +308,9 @@ function sessionUser(session) {
 function recentLinkUser(req) {
   const session = readSession(req);
   if (!session || !session.link || Date.now() - session.issued > ADD_GOOGLE_MINUTES * 60000) return null;
+  // An added account lives on an exact entry and never reaches an admin (see resolveGoogle),
+  // so only a non-admin with an entry of their own may add one.
+  if (resolve(session.email).admin || !entries.some((candidate) => candidate.match === session.email)) return null;
   return resolveLink(session.email);
 }
 
@@ -368,9 +373,7 @@ function cleanEntries(input) {
     seen.add(match);
     const channels = CHANNELS.filter((channel) => Array.isArray(entry.channels) && entry.channels.includes(channel));
     const admin = Boolean(entry.admin);
-    // Links are for single addresses that are not admins.
-    const emailLink = Boolean(entry.email_link) && !admin && !match.startsWith("@");
-    const clean = emailLink ? { match, channels, admin, email_link: true } : { match, channels, admin };
+    const clean = { match, channels, admin };
     const stored = entries.find((existing) => existing.match === match);
     if (stored && stored.google && entry.google !== null && !admin && !match.startsWith("@")) clean.google = stored.google;
     return clean;
