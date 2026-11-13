@@ -78,7 +78,7 @@ Deploy the tv stack (steps 1 to 4) first, with every `?v=` bumped; 3d keeps work
 
 ## Outside the code
 
-- The Google OAuth client then needs only `https://feralcreative.tv` (and localhost) as a JavaScript origin. Removing the others is optional, is Ziad's change to make, and waits for the clean-up step.
+- The Google OAuth client keeps `https://feralcreative.tv`, `https://cats.feralcreative.tv` (its `/admin` page still signs in with Google directly), and localhost as JavaScript origins. Montclair and the 3d origins stop needing it; removing them is optional, is Ziad's change to make, and waits for the clean-up step.
 - No DNS, Tunnel, or port change.
 
 ## Decisions taken unless Ziad says otherwise

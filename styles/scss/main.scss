@@ -402,6 +402,9 @@ header {
     font: inherit;
     font-weight: 700;
     cursor: pointer;
+    // Also an <a> where the way in is a link to the hub
+    display: inline-block;
+    text-decoration: none;
 
     &:hover {
       background: $color-accent;

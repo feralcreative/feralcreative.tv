@@ -227,7 +227,11 @@ class GoogleAuth {
       <p class="add-google-status" role="status"></p>
       <button type="button" class="add-google-dismiss"></button>`;
     // On the way to another site, the panel holds the visitor here until they choose.
-    panel.querySelector(".add-google-dismiss").textContent = this.onward ? `Continue to ${new URL(this.onward.return).host}` : "Not now";
+    let onwardHost = "";
+    try {
+      onwardHost = this.onward ? new URL(this.onward.return).host : "";
+    } catch (error) {} // the backend refuses a bad return when Continue is pressed
+    panel.querySelector(".add-google-dismiss").textContent = this.onward ? `Continue${onwardHost ? ` to ${onwardHost}` : ""}` : "Not now";
     document.body.append(panel);
     this.addGooglePanel = panel;
     panel.querySelector(".add-google-dismiss").addEventListener("click", () => {
@@ -285,9 +289,13 @@ class GoogleAuth {
     this.closeAddGoogle();
     document.getElementById("add-google")?.remove();
     try {
-      await fetch("/api/session", { method: "DELETE", credentials: "same-origin" });
+      const response = await fetch("/api/session", { method: "DELETE", credentials: "same-origin" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
     } catch (error) {
+      // This site's cookie is still there, so the page must not look signed out.
       console.error("[AUTH] Sign-out request failed:", error);
+      location.reload();
+      return;
     }
     if (window.google) google.accounts.id.disableAutoSelect();
     // Signing out of a channel page also signs out of the hub; otherwise the next visit
@@ -385,7 +393,7 @@ window.addEventListener("load", async () => {
   console.log("[AUTH] No session, showing Google Sign-In");
   if (auth.fresh) {
     const text = document.querySelector("#login-screen p");
-    if (text) text.textContent = "Sign in with Google again to use the printer controls.";
+    if (text) text.textContent = "Sign in with Google again to use admin controls.";
   }
   auth.renderSignInButtonWhenReady();
 });

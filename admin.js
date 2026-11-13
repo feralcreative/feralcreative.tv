@@ -285,6 +285,13 @@ window.addEventListener("load", async () => {
   document.getElementById("sign-out").addEventListener("click", async () => {
     await fetch("/api/session", { method: "DELETE", credentials: "same-origin" }).catch(() => {});
     google.accounts.id.disableAutoSelect();
+    // On the cats host, also sign out of the hub; otherwise the cats viewer would go there
+    // and come straight back signed in (see auth.js).
+    const local = location.hostname === "localhost" || location.hostname.endsWith(".localhost");
+    if (location.hostname.startsWith("cats.")) {
+      location.assign(local ? `${location.protocol}//localhost${location.port ? `:${location.port}` : ""}/signout` : "https://feralcreative.tv/signout");
+      return;
+    }
     showLogin();
   });
 
