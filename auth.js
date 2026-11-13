@@ -220,6 +220,9 @@ class GoogleAuth {
   // with Google from then on. The backend stores it on their entry in the access list.
   renderAddGoogle() {
     if (!this.user || !this.user.add_google || !window.google) return;
+    // Never on the way to another site: the offer used to hold the visitor here until they
+    // pressed Continue, and anything else they clicked brought them straight back to it.
+    if (this.onward) return;
     if (document.getElementById("add-google")) return;
     try {
       if (sessionStorage.getItem("fctv-add-google-dismissed")) return;
@@ -233,12 +236,7 @@ class GoogleAuth {
       <div id="add-google-button"></div>
       <p class="add-google-status" role="status"></p>
       <button type="button" class="add-google-dismiss"></button>`;
-    // On the way to another site, the panel holds the visitor here until they choose.
-    let onwardHost = "";
-    try {
-      onwardHost = this.onward ? new URL(this.onward.return).host : "";
-    } catch (error) {} // the backend refuses a bad return when Continue is pressed
-    panel.querySelector(".add-google-dismiss").textContent = this.onward ? `Continue${onwardHost ? ` to ${onwardHost}` : ""}` : "Not now";
+    panel.querySelector(".add-google-dismiss").textContent = "Not now";
     document.body.append(panel);
     this.addGooglePanel = panel;
     panel.querySelector(".add-google-dismiss").addEventListener("click", () => {
@@ -247,7 +245,6 @@ class GoogleAuth {
       } catch (error) {}
       panel.remove();
       this.addGooglePanel = null;
-      if (this.onward) this.continueOnward();
     });
     this.init();
     google.accounts.id.renderButton(panel.querySelector("#add-google-button"), {
@@ -283,7 +280,7 @@ class GoogleAuth {
       panel.querySelector("#add-google-button").remove();
       panel.querySelector(".add-google-text").textContent = `Added. Next time, choose Sign in with Google and pick ${data.google}.`;
       status.textContent = "";
-      if (!this.onward) panel.querySelector(".add-google-dismiss").textContent = "Close";
+      panel.querySelector(".add-google-dismiss").textContent = "Close";
     } catch (error) {
       console.error("[AUTH] Adding a Google account failed:", error);
       status.textContent = "Could not reach the server. Try again.";
@@ -380,12 +377,8 @@ window.addEventListener("load", async () => {
   if (!auth.fresh && (await auth.restore())) {
     console.log(`[AUTH] Session restored for: ${auth.user.email}`);
     if (!auth.onward) return auth.onAuthStateChanged();
-    // On the way to another site: go on at once, unless the add-a-Google-account offer is
-    // showing, which waits for its Continue button.
-    if (auth.user.add_google) {
-      auth.onAuthStateChanged();
-      if (auth.addGooglePanel) return;
-    }
+    // On the way to another site: go on at once. The add-a-Google-account offer never
+    // shows on the way through; it shows on a page the visitor has arrived at.
     return auth.continueOnward();
   }
 
