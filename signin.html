@@ -125,7 +125,9 @@
           // Asked for on the way to another site: go there now; it makes its own trip back
           // through the hub, which answers at once. #signed-in tells that page a session is
           // waiting at the hub, so it goes even if it left for the hub moments ago.
-          location.replace(data.return ? `${data.return}/#signed-in` : "/");
+          // path is the page there they were heading for, checked by the hub when the link was made.
+          const path = typeof data.path === "string" && /^\/(?!\/)/.test(data.path) ? data.path : "/";
+          location.replace(data.return ? `${data.return}${path}#signed-in` : "/");
         } catch (error) {
           console.error("[AUTH] Link sign-in failed:", error);
           fail("Could not reach the server. Try again.", true);

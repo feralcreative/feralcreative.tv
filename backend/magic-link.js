@@ -71,11 +71,13 @@ function recordSend(email) {
   sentToday.count += 1;
 }
 
-// returnTo is the site the viewer was heading for when they asked at the hub, if any.
-function create(email, family, origin, returnTo) {
+// returnTo is the site the viewer was heading for when they asked at the hub, if any, and
+// returnPath the page on it.
+function create(email, family, origin, returnTo, returnPath) {
   const token = crypto.randomBytes(32).toString("base64url");
   const link = { type: "magic", hash: hash(token), email, family, origin, expires: Date.now() + TOKEN_MINUTES * 60000, used: false };
   if (returnTo) link.returnTo = returnTo;
+  if (returnTo && returnPath) link.returnPath = returnPath;
   links.push(link);
   save();
   return token;
@@ -92,7 +94,7 @@ function consume(token, family, origin) {
   if (origin && link.origin !== origin) return null;
   link.used = true;
   save();
-  return { email: link.email, returnTo: link.returnTo || null };
+  return { email: link.email, returnTo: link.returnTo || null, returnPath: link.returnPath || null };
 }
 
 // A one-time code that carries a hub session to origin. challenge is the base64url SHA-256
@@ -149,7 +151,7 @@ async function send(email, url, siteName) {
 }
 
 // Issue and email a link. Callers have already checked that the email may use one.
-async function issue(email, family, origin, siteName, returnTo) {
+async function issue(email, family, origin, siteName, returnTo, returnPath) {
   if (!allowSend(email)) {
     console.log(`[MAGIC] Rate limit reached; no link sent to ${email}`);
     return;
@@ -157,7 +159,7 @@ async function issue(email, family, origin, siteName, returnTo) {
   // Count the send before awaiting it, so parallel requests cannot slip past the caps;
   // a failed send still counts, which keeps retries from hammering Resend.
   recordSend(email);
-  const token = create(email, family, origin, returnTo);
+  const token = create(email, family, origin, returnTo, returnPath);
   await send(email, `${origin}/signin#${token}`, siteName);
   console.log(`[MAGIC] Sent a ${family} sign-in link to ${email} for ${origin}`);
 }

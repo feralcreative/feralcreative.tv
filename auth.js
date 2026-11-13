@@ -16,6 +16,8 @@ class GoogleAuth {
     // On the hub: the site a visitor is on their way to, { return, challenge }, and whether
     // it asked for a new Google sign-in (3d does, for printer controls).
     this.onward = null;
+    // The page on that site the visitor was heading for; it goes into an emailed link.
+    this.onwardPath = "";
     this.fresh = false;
   }
 
@@ -44,7 +46,9 @@ class GoogleAuth {
       sessionStorage.setItem("fctv-verifier", verifier);
       sessionStorage.setItem("fctv-return-path", location.pathname + location.search);
       this.renderHubLink("Taking you to feralcreative.tv to sign in…");
-      location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}`);
+      // path rides along so a sign-in link emailed from the hub, opened in another tab,
+      // still ends on the page the visitor was given; this tab's own copy is in sessionStorage.
+      location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}&path=${encodeURIComponent(location.pathname + location.search)}`);
     } catch (error) {
       console.error("[AUTH] Could not start sign-in at the hub:", error);
       this.renderHubLink();
@@ -203,7 +207,7 @@ class GoogleAuth {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
-          this.onward ? { email: form.querySelector("input").value, return: this.onward.return } : { email: form.querySelector("input").value },
+          this.onward ? { email: form.querySelector("input").value, return: this.onward.return, path: this.onwardPath } : { email: form.querySelector("input").value },
         ),
       });
       const data = await response.json().catch(() => ({}));
@@ -220,6 +224,9 @@ class GoogleAuth {
   // with Google from then on. The backend stores it on their entry in the access list.
   renderAddGoogle() {
     if (!this.user || !this.user.add_google || !window.google) return;
+    // Never on the way to another site: the offer used to hold the visitor here until they
+    // pressed Continue, and anything else they clicked brought them straight back to it.
+    if (this.onward) return;
     if (document.getElementById("add-google")) return;
     try {
       if (sessionStorage.getItem("fctv-add-google-dismissed")) return;
@@ -233,12 +240,7 @@ class GoogleAuth {
       <div id="add-google-button"></div>
       <p class="add-google-status" role="status"></p>
       <button type="button" class="add-google-dismiss"></button>`;
-    // On the way to another site, the panel holds the visitor here until they choose.
-    let onwardHost = "";
-    try {
-      onwardHost = this.onward ? new URL(this.onward.return).host : "";
-    } catch (error) {} // the backend refuses a bad return when Continue is pressed
-    panel.querySelector(".add-google-dismiss").textContent = this.onward ? `Continue${onwardHost ? ` to ${onwardHost}` : ""}` : "Not now";
+    panel.querySelector(".add-google-dismiss").textContent = "Not now";
     document.body.append(panel);
     this.addGooglePanel = panel;
     panel.querySelector(".add-google-dismiss").addEventListener("click", () => {
@@ -247,7 +249,6 @@ class GoogleAuth {
       } catch (error) {}
       panel.remove();
       this.addGooglePanel = null;
-      if (this.onward) this.continueOnward();
     });
     this.init();
     google.accounts.id.renderButton(panel.querySelector("#add-google-button"), {
@@ -283,7 +284,7 @@ class GoogleAuth {
       panel.querySelector("#add-google-button").remove();
       panel.querySelector(".add-google-text").textContent = `Added. Next time, choose Sign in with Google and pick ${data.google}.`;
       status.textContent = "";
-      if (!this.onward) panel.querySelector(".add-google-dismiss").textContent = "Close";
+      panel.querySelector(".add-google-dismiss").textContent = "Close";
     } catch (error) {
       console.error("[AUTH] Adding a Google account failed:", error);
       status.textContent = "Could not reach the server. Try again.";
@@ -372,6 +373,7 @@ window.addEventListener("load", async () => {
     const params = new URLSearchParams(location.search);
     if (params.get("return") && params.get("challenge")) {
       auth.onward = { return: params.get("return"), challenge: params.get("challenge") };
+      auth.onwardPath = params.get("path") || "";
       auth.fresh = params.get("fresh") === "1";
     }
   }
@@ -380,12 +382,8 @@ window.addEventListener("load", async () => {
   if (!auth.fresh && (await auth.restore())) {
     console.log(`[AUTH] Session restored for: ${auth.user.email}`);
     if (!auth.onward) return auth.onAuthStateChanged();
-    // On the way to another site: go on at once, unless the add-a-Google-account offer is
-    // showing, which waits for its Continue button.
-    if (auth.user.add_google) {
-      auth.onAuthStateChanged();
-      if (auth.addGooglePanel) return;
-    }
+    // On the way to another site: go on at once. The add-a-Google-account offer never
+    // shows on the way through; it shows on a page the visitor has arrived at.
     return auth.continueOnward();
   }
 
