@@ -16,6 +16,8 @@ class GoogleAuth {
     // On the hub: the site a visitor is on their way to, { return, challenge }, and whether
     // it asked for a new Google sign-in (3d does, for printer controls).
     this.onward = null;
+    // The page on that site the visitor was heading for; it goes into an emailed link.
+    this.onwardPath = "";
     this.fresh = false;
   }
 
@@ -44,7 +46,9 @@ class GoogleAuth {
       sessionStorage.setItem("fctv-verifier", verifier);
       sessionStorage.setItem("fctv-return-path", location.pathname + location.search);
       this.renderHubLink("Taking you to feralcreative.tv to sign in…");
-      location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}`);
+      // path rides along so a sign-in link emailed from the hub, opened in another tab,
+      // still ends on the page the visitor was given; this tab's own copy is in sessionStorage.
+      location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}&path=${encodeURIComponent(location.pathname + location.search)}`);
     } catch (error) {
       console.error("[AUTH] Could not start sign-in at the hub:", error);
       this.renderHubLink();
@@ -203,7 +207,7 @@ class GoogleAuth {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
-          this.onward ? { email: form.querySelector("input").value, return: this.onward.return } : { email: form.querySelector("input").value },
+          this.onward ? { email: form.querySelector("input").value, return: this.onward.return, path: this.onwardPath } : { email: form.querySelector("input").value },
         ),
       });
       const data = await response.json().catch(() => ({}));
@@ -369,6 +373,7 @@ window.addEventListener("load", async () => {
     const params = new URLSearchParams(location.search);
     if (params.get("return") && params.get("challenge")) {
       auth.onward = { return: params.get("return"), challenge: params.get("challenge") };
+      auth.onwardPath = params.get("path") || "";
       auth.fresh = params.get("fresh") === "1";
     }
   }

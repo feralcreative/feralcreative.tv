@@ -214,6 +214,22 @@ function linkAllows(user, channel) {
   return Boolean(user) && (!channel || user.channels.includes(channel));
 }
 
+// A page on the site a visitor is heading for, as "/path?query", or null. It comes from the
+// browser, so it is kept only if it cannot name another site: one leading slash, no
+// backslash or control character, and still on the same origin once parsed.
+function cleanPath(value) {
+  if (typeof value !== "string" || value.length > 1024 || !/^\/(?![\/\\])/.test(value) || /[\\\u0000-\u001f]/.test(value)) return null;
+  try {
+    const url = new URL(value, "https://site.invalid");
+    if (url.origin !== "https://site.invalid") return null;
+    const path = url.pathname + url.search;
+    // Parsing can fold "/..//host" into "//host"; check the result, not only the input.
+    return path === "/" || path.startsWith("//") ? null : path;
+  } catch (error) {
+    return null;
+  }
+}
+
 // Refuse a state-changing POST that did not come from this page's own origin as JSON.
 function sameOriginJson(req, origin) {
   const site = req.get("sec-fetch-site");
@@ -456,7 +472,7 @@ function register(app) {
         return;
       }
       try {
-        await magicLink.issue(email, family, target.origin, new URL((onward || target).origin).host, onward ? onward.origin : null);
+        await magicLink.issue(email, family, target.origin, new URL((onward || target).origin).host, onward ? onward.origin : null, onward ? cleanPath(req.body.path) : null);
       } catch (error) {
         console.error(`[ACCESS] Sign-in link for ${email} failed:`, error.stack);
       }
@@ -477,7 +493,7 @@ function register(app) {
     issueCookie(req, res, { email: user.email, link: true, issued: now, signedIn: now });
     console.log(`[ACCESS] Signed in ${user.email} with an emailed link`);
     // returnTo was validated when the link was made; the page goes there next.
-    res.json(link.returnTo ? { ...user, add_google: !user.google, return: link.returnTo } : { ...user, add_google: !user.google });
+    res.json(link.returnTo ? { ...user, add_google: !user.google, return: link.returnTo, path: link.returnPath || "/" } : { ...user, add_google: !user.google });
   });
 
   // Add a Google account to the entry of a viewer signed in with an emailed link, so they
