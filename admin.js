@@ -136,6 +136,25 @@ function renderAccess() {
     row.classList.toggle("is-owner", isOwner(entry.match));
     const name = document.createElement("td");
     name.textContent = entry.match;
+    // A Google account the friend added from an emailed-link session; the backend owns it,
+    // so the only edit offered is removing it (sent as google: null).
+    if (entry.google) {
+      const linked = document.createElement("div");
+      linked.className = "access-google";
+      linked.append(`Google: ${entry.google} `);
+      const unlink = document.createElement("button");
+      unlink.type = "button";
+      unlink.className = "access-remove";
+      unlink.textContent = "Remove";
+      unlink.setAttribute("aria-label", `Remove Google account ${entry.google} from ${entry.match}`);
+      unlink.addEventListener("click", () => {
+        if (!confirm(`Remove ${entry.google} from ${entry.match}? They can still sign in with an emailed link.`)) return;
+        entry.google = null;
+        saveAccess();
+      });
+      linked.append(unlink);
+      name.append(linked);
+    }
     row.append(name);
     for (const channel of access.channels) {
       const cell = document.createElement("td");
@@ -152,6 +171,10 @@ function renderAccess() {
       checkbox(`${entry.match}: admin`, entry.admin, (on) => {
         entry.admin = on;
         if (on) {
+          if (entry.google && !confirm(`Making ${entry.match} an admin removes their added Google account, ${entry.google}. Admins sign in as the listed address. Continue?`)) {
+            entry.admin = false;
+            return renderAccess();
+          }
           entry.channels = [...access.channels];
           delete entry.email_link; // admins sign in with Google only
         }

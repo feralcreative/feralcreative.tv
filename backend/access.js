@@ -5,6 +5,8 @@
 // serves any stream, and the admin panel edits the list through /api/access.
 // Friends without a Google account can sign in with an emailed link instead (see
 // magic-link.js) when their exact address is listed with email_link and is not an admin.
+// From such a session they can add a Google account once; it is stored on their entry as
+// google: { sub, email, added } and signs them in as the listed address from then on.
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -38,6 +40,10 @@ const THREE_D_ORIGINS = (process.env.THREE_D_ORIGINS || "https://3d.feralcreativ
   .filter(Boolean);
 const COOKIE = "fctv_session";
 const SESSION_DAYS = 30;
+// How long after redeeming an emailed link the viewer may add a Google account. A link
+// session lasts 30 days, and an old one on a shared or stolen browser must not be enough
+// to attach someone else's Google account for good.
+const ADD_GOOGLE_MINUTES = 30;
 
 // First-run list, carried over from the old client-side ALLOWED_EMAILS / ADVANCED_FEATURES.
 const SEED = [
@@ -121,8 +127,31 @@ function resolve(email) {
 function resolveLink(email) {
   const user = resolve(email);
   if (user.admin) return null;
-  if (!entries.some((entry) => entry.match === user.email && entry.email_link)) return null;
-  return user.channels.length ? { ...user, link: true } : null;
+  const entry = entries.find((candidate) => candidate.match === user.email && candidate.email_link);
+  if (!entry || !user.channels.length) return null;
+  return entry.google ? { ...user, link: true, google: entry.google.email } : { ...user, link: true };
+}
+
+// What a Google account added to an entry may do, or null. The entry must still hold that
+// account (matched by Google's stable ID, never by its address), and like a link it never
+// reaches an admin.
+function resolveGoogle(email, sub) {
+  const entry = entries.find((candidate) => candidate.match === email && candidate.google && candidate.google.sub === sub);
+  if (!entry) return null;
+  const user = resolve(email);
+  if (user.admin || !user.channels.length) return null;
+  return { ...user, google: entry.google.email };
+}
+
+// Who a verified Google sign-in is: the address itself when it has access of its own,
+// otherwise the entry that added this Google account. Returns { user, sub } or null; sub
+// is set only for an added account, and goes in the cookie.
+function resolveGoogleSignIn(identity) {
+  const direct = resolve(identity.email);
+  if (direct.admin || direct.channels.length) return { user: direct, sub: null };
+  const entry = entries.find((candidate) => candidate.google && candidate.google.sub === identity.sub);
+  const user = entry && resolveGoogle(entry.match, identity.sub);
+  return user ? { user, sub: identity.sub } : null;
 }
 
 // The scheme, host and port a request was made to, if it is a page that may receive links.
@@ -151,10 +180,11 @@ function sign(value) {
   return crypto.createHmac("sha256", secret).update(value).digest("base64url");
 }
 
-// link marks a session that began with an emailed link; it is re-checked on every request.
-function issueCookie(req, res, email, link = false) {
+// kind marks how the session began: { m: 1, i: <redeemed at> } for an emailed link,
+// { g: sub } for a Google account added to the entry. Either is re-checked on every request.
+function issueCookie(req, res, email, kind = {}) {
   const expires = Date.now() + SESSION_DAYS * 86400000;
-  const value = Buffer.from(JSON.stringify(link ? { e: email, x: expires, m: 1 } : { e: email, x: expires })).toString("base64url");
+  const value = Buffer.from(JSON.stringify({ e: email, x: expires, ...kind })).toString("base64url");
   res.append("Set-Cookie", cookieHeader(req, `${value}.${sign(value)}`, SESSION_DAYS * 86400));
 }
 
@@ -181,11 +211,18 @@ function readSession(req) {
     const [value, signature] = raw.slice(COOKIE.length + 1).split(".");
     const expected = sign(value || "");
     if (signature && signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-      const { e, x, m } = JSON.parse(Buffer.from(value, "base64url").toString());
-      if (x > Date.now()) return { email: e, link: m === 1 };
+      const { e, x, m, g, i } = JSON.parse(Buffer.from(value, "base64url").toString());
+      if (x > Date.now()) return { email: e, link: m === 1, google: typeof g === "string" ? g : null, issued: typeof i === "number" ? i : 0 };
     }
   }
-  return DEV_EMAIL ? { email: DEV_EMAIL, link: false } : null;
+  return DEV_EMAIL ? { email: DEV_EMAIL, link: false, google: null, issued: 0 } : null;
+}
+
+// The viewer behind a link session redeemed recently enough to add a Google account, or null.
+function recentLinkUser(req) {
+  const session = readSession(req);
+  if (!session || !session.link || Date.now() - session.issued > ADD_GOOGLE_MINUTES * 60000) return null;
+  return resolveLink(session.email);
 }
 
 // The signed-in viewer as the list stands now, or null. A session with no channels at all
@@ -193,16 +230,22 @@ function readSession(req) {
 function currentUser(req) {
   const session = readSession(req);
   if (!session) return null;
-  const user = session.link ? resolveLink(session.email) : resolve(session.email);
+  const user = session.link
+    ? resolveLink(session.email)
+    : session.google
+      ? resolveGoogle(session.email, session.google)
+      : resolve(session.email);
   if (!user || (!user.admin && user.channels.length === 0)) return null;
+  // Tells the page to offer adding a Google account.
+  if (session.link && !user.google && recentLinkUser(req)) return { ...user, add_google: true };
   return user;
 }
 
 async function verifyGoogle(credential) {
   const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
-  if (!payload.email || !payload.email_verified) throw new Error("Unverified Google account");
-  return payload.email;
+  if (!payload.email || !payload.email_verified || !payload.sub) throw new Error("Unverified Google account");
+  return { email: payload.email.toLowerCase(), sub: String(payload.sub) };
 }
 
 // Which channel a proxied URI belongs to. SKYLINE (cam_other) also shows in the cats grid.
@@ -228,6 +271,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// The list as the admin panel sees it: an added Google account shows as its address only.
+function publicEntries() {
+  return entries.map((entry) => (entry.google ? { ...entry, google: entry.google.email } : entry));
+}
+
+// An added Google account belongs to the server: a save keeps the one already stored for
+// the same address and ignores whatever the client sent, so a stale admin tab cannot wipe
+// or forge one. Sending google: null removes it, as does making the entry an admin.
 function cleanEntries(input) {
   if (!Array.isArray(input)) throw new Error("entries must be a list");
   const seen = new Set();
@@ -240,7 +291,10 @@ function cleanEntries(input) {
     const admin = Boolean(entry.admin);
     // Links are for single addresses that are not admins.
     const emailLink = Boolean(entry.email_link) && !admin && !match.startsWith("@");
-    return emailLink ? { match, channels, admin, email_link: true } : { match, channels, admin };
+    const clean = emailLink ? { match, channels, admin, email_link: true } : { match, channels, admin };
+    const stored = entries.find((existing) => existing.match === match);
+    if (stored && stored.google && entry.google !== null && !admin && !match.startsWith("@")) clean.google = stored.google;
+    return clean;
   });
 }
 
@@ -251,14 +305,15 @@ function register(app) {
   // Exchange a Google ID token for a session cookie on this site.
   app.post("/api/session", async (req, res) => {
     try {
-      const email = await verifyGoogle(String(req.body.credential || ""));
-      const user = resolve(email);
-      if (!user.admin && user.channels.length === 0) {
-        console.log(`[ACCESS] Refused sign-in for ${email}`);
-        return res.status(403).json({ error: `${email} doesn't have access.` });
+      const identity = await verifyGoogle(String(req.body.credential || ""));
+      const signIn = resolveGoogleSignIn(identity);
+      if (!signIn) {
+        console.log(`[ACCESS] Refused sign-in for ${identity.email}`);
+        return res.status(403).json({ error: `${identity.email} doesn't have access.` });
       }
-      issueCookie(req, res, user.email);
-      console.log(`[ACCESS] Signed in ${user.email}`);
+      const { user, sub } = signIn;
+      issueCookie(req, res, user.email, sub ? { g: sub } : {});
+      console.log(`[ACCESS] Signed in ${user.email}${sub ? ` through added Google account ${identity.email}` : ""}`);
       res.json(user);
     } catch (error) {
       console.error("[ACCESS] Sign-in failed:", error.message);
@@ -331,9 +386,52 @@ function register(app) {
     if (!linkAllows(user, target.channel)) {
       return res.status(400).json({ error: "This link has expired, was already used, or no longer has access. Ask for a new one." });
     }
-    issueCookie(req, res, user.email, true);
+    issueCookie(req, res, user.email, { m: 1, i: Date.now() });
     console.log(`[ACCESS] Signed in ${user.email} with an emailed link`);
     res.json(user);
+  });
+
+  // Add a Google account to the entry of a viewer signed in with an emailed link, so they
+  // can use Google from then on. Only a link session redeemed in the last ADD_GOOGLE_MINUTES
+  // may do this, once per entry; an admin removes it in /admin. Everything is checked again
+  // after the token is verified, with no await before the save, because the list can change
+  // while that request is out.
+  app.post("/api/magic-link/google", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const target = tvOrigin(req);
+    if (!target || !sameOriginJson(req, target.origin)) return res.status(403).json({ error: "Request refused." });
+    const refused = `Sign out and ask for a new sign-in link, then add your Google account within ${ADD_GOOGLE_MINUTES} minutes of using it.`;
+    if (!recentLinkUser(req)) return res.status(401).json({ error: refused });
+    let identity;
+    try {
+      identity = await verifyGoogle(String(req.body.credential || ""));
+    } catch (error) {
+      console.error("[ACCESS] Adding a Google account failed:", error.message);
+      return res.status(401).json({ error: "Google sign-in failed. Try again." });
+    }
+    const user = recentLinkUser(req);
+    const entry = user && entries.find((candidate) => candidate.match === user.email);
+    if (!entry) return res.status(401).json({ error: refused });
+    if (entry.google) {
+      return res.status(409).json({ error: `This address already has a Google account, ${entry.google.email}. Ask for it to be removed first.` });
+    }
+    if (entries.some((candidate) => candidate.google && candidate.google.sub === identity.sub)) {
+      return res.status(409).json({ error: `${identity.email} is already added to another address.` });
+    }
+    const direct = resolve(identity.email);
+    if (direct.admin || direct.channels.length) {
+      return res.status(409).json({ error: `${identity.email} already has access. Sign out, then sign in with Google.` });
+    }
+    entry.google = { sub: identity.sub, email: identity.email, added: new Date().toISOString() };
+    try {
+      saveAccess();
+    } catch (error) {
+      delete entry.google;
+      console.error("[ACCESS] Could not save an added Google account:", error.stack);
+      return res.status(500).json({ error: "Could not save that. Try again." });
+    }
+    console.log(`[ACCESS] ${user.email} added Google account ${identity.email}`);
+    res.json({ ...user, google: identity.email });
   });
 
   // For other sites (3d): check a Google ID token, or consume a 3d sign-in link, against
@@ -349,8 +447,10 @@ function register(app) {
       return res.json({ ...user, allowed: user.channels.includes(channel) });
     }
     try {
-      const user = resolve(await verifyGoogle(String(req.body.credential || "")));
+      const identity = await verifyGoogle(String(req.body.credential || ""));
       const channel = String(req.body.channel || "");
+      // No access at all still answers with the Google address, so the 3d site can name it.
+      const user = (resolveGoogleSignIn(identity) || { user: resolve(identity.email) }).user;
       res.json({ ...user, allowed: user.admin || user.channels.includes(channel) });
     } catch (error) {
       res.status(401).json({ allowed: false, error: "Invalid Google sign-in" });
@@ -359,7 +459,7 @@ function register(app) {
 
   app.get("/api/access", requireAdmin, (req, res) => {
     res.set("Cache-Control", "no-store");
-    res.json({ channels: CHANNELS, owners: OWNERS, entries });
+    res.json({ channels: CHANNELS, owners: OWNERS, entries: publicEntries() });
   });
 
   app.put("/api/access", requireAdmin, (req, res) => {
@@ -367,7 +467,7 @@ function register(app) {
       entries = cleanEntries(req.body.entries);
       saveAccess();
       console.log(`[ACCESS] ${req.adminEmail} saved ${entries.length} access entries`);
-      res.json({ channels: CHANNELS, owners: OWNERS, entries });
+      res.json({ channels: CHANNELS, owners: OWNERS, entries: publicEntries() });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

@@ -836,3 +836,62 @@ footer {
     font-size: 1rem;
   }
 }
+
+// Access list: a Google account a friend added to their own entry
+.access-table .access-google {
+  margin-top: 0.25rem;
+  color: $color-text-muted;
+  font-size: 0.85rem;
+}
+
+// Offer shown to a viewer signed in with an emailed link: add a Google account
+.add-google {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 1001;
+  transform: translateX(-50%);
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1rem 1.25rem;
+  background: $color-white;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+  text-align: center;
+
+  p {
+    margin: 0 0 0.75rem;
+    color: $color-text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    text-wrap: pretty;
+  }
+
+  #add-google-button {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .add-google-status {
+    color: $color-error;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .add-google-dismiss {
+    padding: 0.25rem 0.5rem;
+    background: none;
+    border: 0;
+    color: $color-text-secondary;
+    font: inherit;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-accent;
+    }
+  }
+}
