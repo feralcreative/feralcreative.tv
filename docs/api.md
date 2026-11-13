@@ -67,7 +67,7 @@ The viewer polls `GET /api/feeds` every 15 seconds and shows the off-air slate o
 
 ## Access and sessions
 
-`backend/access.js` owns the access list (`/app/state/access.json`, host `data/backend-state/`, gitignored) and the session cookie. Each entry is `{ "match": "<email or @domain>", "channels": ["cats", "montclair", "3d"], "admin": bool, "email_link"?: true, "google"?: { "sub", "email", "added" } }`; a viewer gets the union of every matching entry, admins get every channel, and `ADMIN_EMAILS` are always admins. On first boot the list is seeded from the old `config.js` allowlist.
+`backend/access.js` owns the access list (`/app/state/access.json`, host `data/backend-state/`, gitignored) and the session cookie. Each entry is `{ "match": "<email or @domain>", "channels": ["cats", "montclair", "3d"], "admin": bool, "google"?: { "sub", "email", "added" } }`; a viewer gets the union of every matching entry, admins get every channel, and `ADMIN_EMAILS` are always admins. On first boot the list is seeded from the old `config.js` allowlist.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
@@ -100,12 +100,12 @@ Everyone signs in at the hub. `auth.js` on a channel page with no session saves 
 
 ### Emailed sign-in links
 
-For listed friends without a Google account (`backend/magic-link.js`). An exact-email entry with `email_link: true` may ask for a one-time link; `@domain` entries and anyone who is an admin by any route (owner list, admin domain, admin entry) may not, and the backend drops the flag from them on save. Links go out through Resend (`RESEND_API_KEY`, `MAIL_FROM`), at most 3 per address per hour and 50 a day across the stack, which stays under Resend's free 100 a day that Routeloop shares.
+For anyone on the list (`backend/magic-link.js`). Any address the list gives a channel may ask for a one-time link, whether it matches an exact entry or an `@domain`; there is no per-entry switch (Ziad, 2026-11-13). A link session is never an admin: an address that is an admin by any route (owner list, admin domain, admin entry) signs in by link as a viewer with every channel, and the admin panel and printer controls still need Google. Only a non-admin with an exact entry of their own is offered adding a Google account. Links go out through Resend (`RESEND_API_KEY`, `MAIL_FROM`), at most 3 per address per hour, 10 per mail domain per hour, and 50 a day across the stack, which stays under Resend's free 100 a day that Routeloop shares.
 
 - **Request.** The answer to `POST /api/magic-link` is sent before any lookup, so neither it nor its timing says who is listed. Since central sign-in only the hub's page asks, optionally with `return` (a site from the handoff list, whose channel the address must hold). A tv page asks for its own origin (`feralcreative.tv`, `cats.feralcreative.tv`, `montclair.tv`, and `*.localhost` only when `MAGIC_LINK_ALLOW_LOCAL=true`); the 3d proxy asks with `family: "3d"` and an origin from `THREE_D_ORIGINS`. Cats and Montclair links require that channel; the hub requires any channel.
 - **Token.** 32 random bytes, stored only as a SHA-256 hash in `/app/state/magic-links.json` with the email, family, origin, a 15-minute expiry, and a used flag. The link is `<origin>/signin#<token>`; the fragment keeps the token out of nginx logs and `Referer`.
 - **Redeem.** `/signin` (`signin.html`) consumes nothing on load, so mail scanners that prefetch the link cannot spend it; its button POSTs the token. Redeem requires JSON, an `Origin` equal to the link's origin, and `Sec-Fetch-Site: same-origin` when present. Checking and marking a token used is one synchronous step, which is one-time only because the backend is a single Node process.
-- **Session.** A link session's cookie carries `m: 1` and its redeem time `i`; every request re-checks that the address still has `email_link`, is not an admin, and has a channel, so unticking the box or removing the entry ends it at once.
+- **Session.** A link session's cookie carries `m: 1` and its redeem time `i`; every request re-checks that the address still has a channel and forces `admin: false`, so removing the entry ends it at once.
 - **Local.** With no Resend key, `MAGIC_LINK_DEV_LOG=true` (the dev compose default) writes each link to the backend log instead.
 
 ### Adding a Google account

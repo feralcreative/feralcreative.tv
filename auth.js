@@ -166,7 +166,7 @@ class GoogleAuth {
     });
   }
 
-  // For listed friends without a Google account: ask the backend to email a one-time link.
+  // For anyone listed who would rather not use Google: ask the backend to email a one-time link.
   // The answer is the same whether or not the address is on the list.
   renderEmailLinkForm() {
     if (!this.isHub() || this.fresh || document.getElementById("email-link-form")) return;
@@ -176,7 +176,7 @@ class GoogleAuth {
     form.id = "email-link-form";
     form.className = "email-link-form";
     form.innerHTML = `
-      <label for="email-link-address">No Google account? Get a sign-in link by email.</label>
+      <label for="email-link-address">Or get a sign-in link by email.</label>
       <div class="email-link-row">
         <input id="email-link-address" type="email" autocomplete="email" required placeholder="you@example.com">
         <button type="submit" class="email-link-button">Email me a link</button>

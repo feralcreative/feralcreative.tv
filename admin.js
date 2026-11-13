@@ -107,13 +107,6 @@ function isOwner(match) {
   return access.owners.includes(match);
 }
 
-// Mirrors the backend: an address is an admin through the owner list, its own entry, or an
-// admin @domain. Such addresses sign in with Google only, so Email link is not offered.
-function isEffectiveAdmin(entry) {
-  const covers = (pattern) => (pattern.startsWith("@") ? entry.match.endsWith(pattern) : entry.match === pattern);
-  return entry.admin || access.owners.some(covers) || access.entries.some((other) => other.admin && covers(other.match));
-}
-
 function checkbox(label, checked, onChange, disabled) {
   const input = document.createElement("input");
   input.type = "checkbox";
@@ -176,22 +169,11 @@ function renderAccess() {
             return renderAccess();
           }
           entry.channels = [...access.channels];
-          delete entry.email_link; // admins sign in with Google only
         }
         saveAccess();
       }),
     );
     row.append(adminCell);
-    // Emailed sign-in links: single addresses that are not admins (the backend enforces it too).
-    const linkCell = document.createElement("td");
-    linkCell.append(
-      checkbox(`${entry.match}: email link`, Boolean(entry.email_link), (on) => {
-        if (on) entry.email_link = true;
-        else delete entry.email_link;
-        saveAccess();
-      }, entry.match.startsWith("@") || isEffectiveAdmin(entry)),
-    );
-    row.append(linkCell);
     const removeCell = document.createElement("td");
     const remove = document.createElement("button");
     remove.type = "button";

@@ -16,6 +16,9 @@ const STORE_FILE = path.join(STATE_DIR, "magic-links.json");
 const TOKEN_MINUTES = 15;
 const HANDOFF_SECONDS = 60;
 const PER_EMAIL_PER_HOUR = 3;
+// An @domain entry admits any address at that domain, so cap the domain too; otherwise
+// invented addresses there could spend the whole day's allowance.
+const PER_DOMAIN_PER_HOUR = 10;
 const PER_DAY = 50; // stays under Resend's free 100 a day, which Routeloop shares
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM = process.env.MAIL_FROM || "";
@@ -24,6 +27,7 @@ const DEV_LOG = process.env.MAGIC_LINK_DEV_LOG === "true";
 
 let links = [];
 const sentByEmail = new Map();
+const sentByDomain = new Map();
 let sentToday = { day: "", count: 0 };
 
 function hash(token) {
@@ -55,11 +59,15 @@ function allowSend(email) {
   sentByEmail.set(email, recent);
   const day = new Date().toISOString().slice(0, 10);
   if (sentToday.day !== day) sentToday = { day, count: 0 };
-  return recent.length < PER_EMAIL_PER_HOUR && sentToday.count < PER_DAY;
+  const domain = email.slice(email.lastIndexOf("@"));
+  const recentDomain = (sentByDomain.get(domain) || []).filter((time) => now - time < 3600000);
+  sentByDomain.set(domain, recentDomain);
+  return recent.length < PER_EMAIL_PER_HOUR && recentDomain.length < PER_DOMAIN_PER_HOUR && sentToday.count < PER_DAY;
 }
 
 function recordSend(email) {
   sentByEmail.get(email).push(Date.now());
+  sentByDomain.get(email.slice(email.lastIndexOf("@"))).push(Date.now());
   sentToday.count += 1;
 }
 

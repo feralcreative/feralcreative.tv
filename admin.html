@@ -140,7 +140,7 @@
         <!-- Access list: who may sign in, and to which channels -->
         <section class="access-admin" aria-labelledby="access-title">
             <h2 id="access-title">Access</h2>
-            <p class="feed-admin-note">One row per email or @domain. Changes save as you make them and apply on the viewer's next request. Tick Email link for a friend without a Google account. <span id="access-owners"></span></p>
+            <p class="feed-admin-note">One row per email or @domain. Changes save as you make them and apply on the viewer's next request. Everyone listed can sign in with Google or an emailed link; the admin panel needs Google. <span id="access-owners"></span></p>
             <p id="access-error" class="feed-error" role="alert" hidden></p>
             <div class="access-scroll">
                 <table class="access-table">
@@ -151,7 +151,6 @@
                             <th scope="col">Montclair</th>
                             <th scope="col">3D</th>
                             <th scope="col">Admin</th>
-                            <th scope="col"><abbr title="May sign in with a one-time link emailed to them, for people without a Google account. Single addresses only, never admins.">Email link</abbr></th>
                             <th scope="col"><span class="sr-only">Remove</span></th>
                         </tr>
                     </thead>
@@ -199,7 +198,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="./obs-stream.js?v=2"></script>
-    <script src="./admin.js?v=6"></script>
+    <script src="./admin.js?v=7"></script>
     <script src="./app.js?v=9"></script>
     <script src="./channels.js?v=2"></script>
 </body>
