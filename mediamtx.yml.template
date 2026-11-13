@@ -53,8 +53,10 @@ webrtcICEServers2:
 hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: yes
-hlsVariant: lowLatency
-hlsSegmentCount: 7
+# Standard (not low-latency) HLS: LL-HLS's 200ms parts meant ~5 requests a second
+# per viewer through the Cloudflare Tunnel, and players fell off the 7-segment window.
+hlsVariant: fmp4
+hlsSegmentCount: 10
 hlsSegmentDuration: 1s
 hlsPartDuration: 200ms
 

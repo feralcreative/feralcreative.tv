@@ -101,7 +101,8 @@ class OBSStream {
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
     } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
-      const player = new Hls({ maxLiveSyncPlaybackRate: 1.5 });
+      // Default live sync: no catch-up speed-ups, which stuttered over the Tunnel.
+      const player = new Hls();
       view.player = player;
       player.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) failed();
