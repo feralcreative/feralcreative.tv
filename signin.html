@@ -81,7 +81,8 @@
           }
           console.log(`[AUTH] Signed in from the hub: ${data.email}`);
           try {
-            sessionStorage.removeItem("fctv-left-at");
+            // If the session does not stick, the next page must not go straight back to the hub.
+            sessionStorage.setItem("fctv-redeemed-at", String(Date.now()));
           } catch (error) {}
           location.replace(savedPath());
         } catch (error) {

@@ -29,18 +29,20 @@ class GoogleAuth {
   }
 
   // Channel pages: go to the hub to sign in. The verifier stays here; only its hash goes in
-  // the URL, so nothing in history or a log lets anyone else finish this sign-in. On its own
-  // this happens at most once every 30 seconds per tab, so a failure cannot loop.
+  // the URL, so nothing in history or a log lets anyone else finish this sign-in. The only
+  // way this can loop is a sign-in the hub completes but that does not stick here (a blocked
+  // cookie), so the automatic trip is skipped only when /signin finished one in the last 30
+  // seconds. It used to be skipped for 30 seconds after any trip, which stranded a visitor
+  // who signed in at the hub and came straight back.
   async leaveForHub(force = false) {
     try {
-      const last = Number(sessionStorage.getItem("fctv-left-at") || 0);
-      if (!force && Date.now() - last < 30000) return this.renderHubLink();
+      const redeemed = Number(sessionStorage.getItem("fctv-redeemed-at") || 0);
+      if (!force && Date.now() - redeemed < 30000) return this.renderHubLink();
       const encode = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
       const verifier = encode(crypto.getRandomValues(new Uint8Array(32)));
       const challenge = encode(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
       sessionStorage.setItem("fctv-verifier", verifier);
       sessionStorage.setItem("fctv-return-path", location.pathname + location.search);
-      sessionStorage.setItem("fctv-left-at", String(Date.now()));
       this.renderHubLink("Taking you to feralcreative.tv to sign in…");
       location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}`);
     } catch (error) {
@@ -110,6 +112,11 @@ class GoogleAuth {
       if (response.ok) this.user = await response.json();
     } catch (error) {
       console.error("[AUTH] Could not check the session:", error);
+    }
+    if (this.user) {
+      try {
+        sessionStorage.removeItem("fctv-redeemed-at");
+      } catch (error) {}
     }
     return Boolean(this.user);
   }
