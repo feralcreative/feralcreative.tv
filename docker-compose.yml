@@ -63,6 +63,7 @@ services:
       - ./admin.html:/usr/share/nginx/html/admin.html:ro
       - ./admin.js:/usr/share/nginx/html/admin.js:ro
       - ./signin.html:/usr/share/nginx/html/signin.html:ro
+      - ./signout.html:/usr/share/nginx/html/signout.html:ro
       - ./app.js:/usr/share/nginx/html/app.js:ro
       - ./obs-stream.js:/usr/share/nginx/html/obs-stream.js:ro
       - ./auth.js:/usr/share/nginx/html/auth.js:ro

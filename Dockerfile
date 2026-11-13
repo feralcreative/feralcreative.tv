@@ -11,6 +11,7 @@ COPY skyline.html /usr/share/nginx/html/
 COPY admin.html /usr/share/nginx/html/
 COPY admin.js /usr/share/nginx/html/
 COPY signin.html /usr/share/nginx/html/
+COPY signout.html /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
 COPY obs-stream.js /usr/share/nginx/html/
 COPY config.js /usr/share/nginx/html/

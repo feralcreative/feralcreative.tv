@@ -22,7 +22,7 @@ nginx serves three experiences from the same web image. Its default server uses 
 | Cats viewer | cats.feralcreative.tv | <http://cats.localhost:54999/> | `cats.html` |
 | Montclair viewer | montclair.tv | <http://montclair.localhost:54999/> | `skyline.html` |
 
-cats.feralcreative.co 301s to cats.feralcreative.tv in nginx. 3d.feralcreative.tv is linked from the hub but served by the separate 3d repo and container. `/admin` on the hub and cats hosts serves the existing four-feed admin grid. The directory requires Google sign-in like every viewer, lists channel names and URLs, and never requests video. Viewer sign-in remains per-origin. `channels.js` supplies canonical channel links and switches them to the matching local hostname in development; it also maps viewer links back to the local hub.
+cats.feralcreative.co 301s to cats.feralcreative.tv in nginx. 3d.feralcreative.tv is linked from the hub but served by the separate 3d repo and container. `/admin` on the hub and cats hosts serves the existing four-feed admin grid. The directory requires Google sign-in like every viewer, lists channel names and URLs, and never requests video. Viewers sign in once at the hub, which hands the session to each origin (see [api.md](api.md#central-sign-in)). `channels.js` supplies canonical channel links and switches them to the matching local hostname in development; it also maps viewer links back to the local hub.
 
 ### Domain migration still pending
 

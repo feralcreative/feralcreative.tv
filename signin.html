@@ -9,12 +9,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles/css/main.css?v=20261112a">
+  <link rel="stylesheet" href="/styles/css/main.css?v=20261112b">
 </head>
 <body class="tv-page">
-  <!-- Opened from an emailed link. Loading this page uses nothing up, so a mail scanner
-       that fetches the link first cannot spend it; only the button does. The token is in
-       the fragment, which never leaves the browser except in that POST. -->
+  <!-- Opened from an emailed link, or on the way back from signing in at the hub.
+       An emailed link (#<token>): loading this page uses nothing up, so a mail scanner that
+       fetches the link first cannot spend it; only the button does.
+       A hub handoff (#handoff=<code>): never emailed, so it is redeemed on load, together
+       with the verifier this browser saved before it left for the hub.
+       Either rides in the fragment, which never leaves the browser except in that POST. -->
   <div class="login-screen">
     <div class="login-container">
       <img class="login-logo" src="/images/feral-lockup.svg" alt="Feral Creative">
@@ -26,17 +29,78 @@
   </div>
   <script>
     (function () {
-      const token = location.hash.slice(1);
+      const fragment = location.hash.slice(1);
+      const handoff = fragment.startsWith("handoff=") ? fragment.slice(8) : "";
+      const token = handoff ? "" : fragment;
       history.replaceState(null, "", location.pathname);
       const button = document.getElementById("signin-button");
       const errorDiv = document.getElementById("error-message");
       document.getElementById("signin-site").textContent = location.hostname;
+
+      // Where the visitor was before leaving for the hub. sessionStorage is theirs to edit,
+      // so the path is used only if it stays on this site and is not a sign-in page.
+      function savedPath() {
+        try {
+          const saved = sessionStorage.getItem("fctv-return-path") || "/";
+          sessionStorage.removeItem("fctv-return-path");
+          const url = new URL(saved, location.origin);
+          const ok = url.origin === location.origin && /^\/(?!\/)/.test(saved) && !/^\/(signin|signout)(\/|$)/.test(url.pathname);
+          return ok ? url.pathname + url.search : "/";
+        } catch (error) {
+          return "/";
+        }
+      }
+
+      async function redeemHandoff() {
+        button.hidden = true;
+        document.getElementById("signin-text").textContent = "Signing you in…";
+        let verifier = "";
+        try {
+          verifier = sessionStorage.getItem("fctv-verifier") || "";
+          sessionStorage.removeItem("fctv-verifier");
+        } catch (error) {}
+        const again = () => {
+          document.getElementById("signin-text").textContent = "";
+          const link = document.createElement("a");
+          link.href = "/";
+          link.className = "email-link-button";
+          link.textContent = "Try again";
+          button.replaceWith(link);
+        };
+        try {
+          const response = await fetch("/api/handoff/redeem", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ code: handoff, verifier }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            again();
+            return fail(data.error || "Sign-in failed. Try again.");
+          }
+          console.log(`[AUTH] Signed in from the hub: ${data.email}`);
+          try {
+            sessionStorage.removeItem("fctv-left-at");
+          } catch (error) {}
+          location.replace(savedPath());
+        } catch (error) {
+          console.error("[AUTH] Hub sign-in failed:", error);
+          again();
+          fail("Could not reach the server. Try again.");
+        }
+      }
 
       function fail(message, retry = false) {
         errorDiv.textContent = message;
         errorDiv.style.display = "block";
         button.hidden = !retry;
         button.disabled = false;
+      }
+
+      if (handoff) {
+        redeemHandoff();
+        return;
       }
 
       if (!token) {
@@ -57,7 +121,10 @@
           // A server error means the link was not checked yet, so it can be tried again.
           if (!response.ok) return fail(data.error || "Sign-in failed. Ask for a new link.", response.status >= 500);
           console.log(`[AUTH] Signed in with an emailed link: ${data.email}`);
-          location.replace("/");
+          // Asked for on the way to another site: go there now; it makes its own trip back
+          // through the hub, which answers at once. #signed-in tells that page a session is
+          // waiting at the hub, so it goes even if it left for the hub moments ago.
+          location.replace(data.return ? `${data.return}/#signed-in` : "/");
         } catch (error) {
           console.error("[AUTH] Link sign-in failed:", error);
           fail("Could not reach the server. Try again.", true);

@@ -1,5 +1,8 @@
-// Google sign-in, or an emailed link for listed friends without Google, for every
-// feralcreative.tv page. A friend signed in with a link can add a Google account and use
+// Sign-in for every feralcreative.tv page. Everyone signs in at the hub (feralcreative.tv),
+// with Google or an emailed link for listed friends without Google. A channel page with no
+// session sends the visitor to the hub with ?return=<its origin>&challenge=<hash>; the hub
+// signs them in and sends them back to /signin with a one-time code, which signin.html
+// redeems with the verifier kept in sessionStorage. A friend signed in with a link can add a Google account and use
 // Google from then on. The backend owns the access list:
 // signing in trades the Google token for a session cookie, and GET /api/session says
 // who you are and which channels you may watch. nginx enforces the same list on every
@@ -10,6 +13,94 @@ class GoogleAuth {
     this.user = null;
     this.addGooglePanel = null;
     this.channel = document.body.dataset.channel || null;
+    // On the hub: the site a visitor is on their way to, { return, challenge }, and whether
+    // it asked for a new Google sign-in (3d does, for printer controls).
+    this.onward = null;
+    this.fresh = false;
+  }
+
+  isHub() {
+    return !this.channel;
+  }
+
+  hubUrl() {
+    const local = location.hostname === "localhost" || location.hostname.endsWith(".localhost");
+    return local ? `${location.protocol}//localhost${location.port ? `:${location.port}` : ""}/` : "https://feralcreative.tv/";
+  }
+
+  // Channel pages: go to the hub to sign in. The verifier stays here; only its hash goes in
+  // the URL, so nothing in history or a log lets anyone else finish this sign-in. On its own
+  // this happens at most once every 30 seconds per tab, so a failure cannot loop.
+  async leaveForHub(force = false) {
+    try {
+      const last = Number(sessionStorage.getItem("fctv-left-at") || 0);
+      if (!force && Date.now() - last < 30000) return this.renderHubLink();
+      const encode = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const verifier = encode(crypto.getRandomValues(new Uint8Array(32)));
+      const challenge = encode(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+      sessionStorage.setItem("fctv-verifier", verifier);
+      sessionStorage.setItem("fctv-return-path", location.pathname + location.search);
+      sessionStorage.setItem("fctv-left-at", String(Date.now()));
+      this.renderHubLink("Taking you to feralcreative.tv to sign in…");
+      location.assign(`${this.hubUrl()}?return=${encodeURIComponent(location.origin)}&challenge=${challenge}`);
+    } catch (error) {
+      console.error("[AUTH] Could not start sign-in at the hub:", error);
+      this.renderHubLink();
+    }
+  }
+
+  // Channel pages: the way in when the automatic trip to the hub did not happen.
+  renderHubLink(message = "") {
+    const anchor = document.getElementById("google-signin-button");
+    if (!anchor) return;
+    anchor.replaceChildren();
+    if (message) {
+      anchor.textContent = message;
+      return;
+    }
+    const link = document.createElement("a");
+    link.className = "email-link-button";
+    link.href = this.hubUrl();
+    link.textContent = "Sign in at feralcreative.tv";
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.leaveForHub(true);
+    });
+    anchor.append(link);
+  }
+
+  // Hub: send a signed-in visitor on to the site they came from, with a one-time code.
+  async continueOnward() {
+    try {
+      const response = await fetch("/api/handoff", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(this.onward),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        location.replace(data.url);
+        return;
+      }
+      console.error(`[AUTH] Handoff refused: ${data.error}`);
+      this.stayOnHub(data.error || "Could not sign you in to that site. Try again.");
+    } catch (error) {
+      console.error("[AUTH] Handoff failed:", error);
+      this.stayOnHub("Could not reach the server. Try again.");
+    }
+  }
+
+  // Hub: the onward trip is off; show the sign-in screen with the reason, so another
+  // account can be tried.
+  stayOnHub(message) {
+    this.onward = null;
+    this.fresh = false;
+    history.replaceState(null, "", "/");
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("stream-container").style.display = "none";
+    this.showError(message, true);
+    this.renderSignInButtonWhenReady();
   }
 
   // Restore an existing session from the cookie.
@@ -48,6 +139,7 @@ class GoogleAuth {
       }
       this.user = data;
       console.log(`[AUTH] User logged in: ${this.user.email}`);
+      if (this.onward) return this.continueOnward();
       this.onAuthStateChanged();
     } catch (error) {
       console.error("[AUTH] Authentication error:", error);
@@ -77,7 +169,7 @@ class GoogleAuth {
   // For listed friends without a Google account: ask the backend to email a one-time link.
   // The answer is the same whether or not the address is on the list.
   renderEmailLinkForm() {
-    if (document.getElementById("email-link-form")) return;
+    if (!this.isHub() || this.fresh || document.getElementById("email-link-form")) return;
     const anchor = document.getElementById("google-signin-button");
     if (!anchor) return;
     const form = document.createElement("form");
@@ -103,7 +195,9 @@ class GoogleAuth {
       const response = await fetch("/api/magic-link", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: form.querySelector("input").value }),
+        body: JSON.stringify(
+          this.onward ? { email: form.querySelector("input").value, return: this.onward.return } : { email: form.querySelector("input").value },
+        ),
       });
       const data = await response.json().catch(() => ({}));
       status.textContent = data.message || data.error || "Something went wrong. Try again.";
@@ -131,7 +225,9 @@ class GoogleAuth {
       <p class="add-google-text">Have a Google account? Add it once and sign in with Google from now&nbsp;on.</p>
       <div id="add-google-button"></div>
       <p class="add-google-status" role="status"></p>
-      <button type="button" class="add-google-dismiss">Not now</button>`;
+      <button type="button" class="add-google-dismiss"></button>`;
+    // On the way to another site, the panel holds the visitor here until they choose.
+    panel.querySelector(".add-google-dismiss").textContent = this.onward ? `Continue to ${new URL(this.onward.return).host}` : "Not now";
     document.body.append(panel);
     this.addGooglePanel = panel;
     panel.querySelector(".add-google-dismiss").addEventListener("click", () => {
@@ -140,6 +236,7 @@ class GoogleAuth {
       } catch (error) {}
       panel.remove();
       this.addGooglePanel = null;
+      if (this.onward) this.continueOnward();
     });
     this.init();
     google.accounts.id.renderButton(panel.querySelector("#add-google-button"), {
@@ -175,7 +272,7 @@ class GoogleAuth {
       panel.querySelector("#add-google-button").remove();
       panel.querySelector(".add-google-text").textContent = `Added. Next time, choose Sign in with Google and pick ${data.google}.`;
       status.textContent = "";
-      panel.querySelector(".add-google-dismiss").textContent = "Close";
+      if (!this.onward) panel.querySelector(".add-google-dismiss").textContent = "Close";
     } catch (error) {
       console.error("[AUTH] Adding a Google account failed:", error);
       status.textContent = "Could not reach the server. Try again.";
@@ -193,11 +290,19 @@ class GoogleAuth {
       console.error("[AUTH] Sign-out request failed:", error);
     }
     if (window.google) google.accounts.id.disableAutoSelect();
+    // Signing out of a channel page also signs out of the hub; otherwise the next visit
+    // would go there and come straight back signed in. This site's cookie is gone first.
+    if (!this.isHub()) {
+      location.assign(`${this.hubUrl()}signout`);
+      return;
+    }
     this.onAuthStateChanged();
     this.renderSignInButtonWhenReady();
   }
 
+  // The way to sign in: Google and the email form on the hub, a link to the hub elsewhere.
   renderSignInButtonWhenReady() {
+    if (!this.isHub()) return this.renderHubLink();
     this.renderEmailLinkForm();
     if (!window.google) return;
     this.init();
@@ -248,14 +353,39 @@ window.addEventListener("load", async () => {
     localStorage.removeItem("user");
   } catch (error) {}
 
-  if (await auth.restore()) {
+  if (auth.isHub()) {
+    const params = new URLSearchParams(location.search);
+    if (params.get("return") && params.get("challenge")) {
+      auth.onward = { return: params.get("return"), challenge: params.get("challenge") };
+      auth.fresh = params.get("fresh") === "1";
+    }
+  }
+
+  // fresh asks for a new Google sign-in even when a session exists.
+  if (!auth.fresh && (await auth.restore())) {
     console.log(`[AUTH] Session restored for: ${auth.user.email}`);
-    auth.onAuthStateChanged();
-    return;
+    if (!auth.onward) return auth.onAuthStateChanged();
+    // On the way to another site: go on at once, unless the add-a-Google-account offer is
+    // showing, which waits for its Continue button.
+    if (auth.user.add_google) {
+      auth.onAuthStateChanged();
+      if (auth.addGooglePanel) return;
+    }
+    return auth.continueOnward();
+  }
+
+  if (!auth.isHub()) {
+    console.log("[AUTH] No session, going to feralcreative.tv to sign in");
+    // The hub sends a visitor here with #signed-in after an emailed link; see signin.html.
+    const expected = location.hash === "#signed-in";
+    if (expected) history.replaceState(null, "", location.pathname + location.search);
+    return auth.leaveForHub(expected);
   }
 
   console.log("[AUTH] No session, showing Google Sign-In");
-  auth.renderEmailLinkForm();
-  auth.init();
-  auth.renderSignInButton();
+  if (auth.fresh) {
+    const text = document.querySelector("#login-screen p");
+    if (text) text.textContent = "Sign in with Google again to use the printer controls.";
+  }
+  auth.renderSignInButtonWhenReady();
 });
