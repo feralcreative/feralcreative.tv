@@ -3,6 +3,10 @@
 // the site family ("tv" or "3d"), the exact origin the link points at, an expiry, and a
 // used flag. Consuming a token is one synchronous step, so in this single Node process
 // two redemptions of the same link cannot both succeed.
+// The same store holds handoff codes (type "handoff"), which carry a hub session to another
+// site after a central sign-in. They are never emailed, last a minute, and are bound to the
+// target origin and to a challenge only the browser that asked can answer. Every consumer
+// checks the type first, so a code can never be redeemed as a link or the reverse.
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -10,6 +14,7 @@ const path = require("path");
 const STATE_DIR = path.dirname(process.env.FEEDS_STATE_FILE || "/app/state/feeds.json");
 const STORE_FILE = path.join(STATE_DIR, "magic-links.json");
 const TOKEN_MINUTES = 15;
+const HANDOFF_SECONDS = 60;
 const PER_EMAIL_PER_HOUR = 3;
 const PER_DAY = 50; // stays under Resend's free 100 a day, which Routeloop shares
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
@@ -58,23 +63,54 @@ function recordSend(email) {
   sentToday.count += 1;
 }
 
-function create(email, family, origin) {
+// returnTo is the site the viewer was heading for when they asked at the hub, if any.
+function create(email, family, origin, returnTo) {
   const token = crypto.randomBytes(32).toString("base64url");
-  links.push({ hash: hash(token), email, family, origin, expires: Date.now() + TOKEN_MINUTES * 60000, used: false });
+  const link = { type: "magic", hash: hash(token), email, family, origin, expires: Date.now() + TOKEN_MINUTES * 60000, used: false };
+  if (returnTo) link.returnTo = returnTo;
+  links.push(link);
   save();
   return token;
 }
 
-// The email a token belongs to, or null. Checks and marks it used in one synchronous step.
+// The { email, returnTo } a link token belongs to, or null. Checks and marks it used in one
+// synchronous step. Records written before types existed have none and are links.
 function consume(token, family, origin) {
   if (typeof token !== "string" || token.length < 40) return null;
   const digest = hash(token);
   const link = links.find((entry) => entry.hash === digest);
-  if (!link || link.used || link.expires <= Date.now() || link.family !== family) return null;
+  if (!link || (link.type && link.type !== "magic")) return null;
+  if (link.used || link.expires <= Date.now() || link.family !== family) return null;
   if (origin && link.origin !== origin) return null;
   link.used = true;
   save();
-  return link.email;
+  return { email: link.email, returnTo: link.returnTo || null };
+}
+
+// A one-time code that carries a hub session to origin. challenge is the base64url SHA-256
+// of a verifier that stays in the asking browser.
+function createHandoff(origin, challenge, session) {
+  const code = crypto.randomBytes(32).toString("base64url");
+  links.push({ type: "handoff", hash: hash(code), origin, challenge, session, expires: Date.now() + HANDOFF_SECONDS * 1000, used: false });
+  save();
+  return code;
+}
+
+// The session a handoff code carries, or null. The code is spent only when everything
+// checks out, including stillAllowed(session), so a wrong origin, a wrong verifier, or a
+// viewer who has lost access cannot burn it or use it. One synchronous step.
+function consumeHandoff(code, origin, verifier, stillAllowed) {
+  if (typeof code !== "string" || code.length < 40 || typeof verifier !== "string" || verifier.length < 40) return null;
+  const digest = hash(code);
+  const record = links.find((entry) => entry.hash === digest);
+  if (!record || record.type !== "handoff" || record.used || record.expires <= Date.now()) return null;
+  if (record.origin !== origin) return null;
+  const answer = crypto.createHash("sha256").update(verifier).digest("base64url");
+  if (answer.length !== record.challenge.length || !crypto.timingSafeEqual(Buffer.from(answer), Buffer.from(record.challenge))) return null;
+  if (!stillAllowed(record.session)) return null;
+  record.used = true;
+  save();
+  return record.session;
 }
 
 async function send(email, url, siteName) {
@@ -105,7 +141,7 @@ async function send(email, url, siteName) {
 }
 
 // Issue and email a link. Callers have already checked that the email may use one.
-async function issue(email, family, origin, siteName) {
+async function issue(email, family, origin, siteName, returnTo) {
   if (!allowSend(email)) {
     console.log(`[MAGIC] Rate limit reached; no link sent to ${email}`);
     return;
@@ -113,11 +149,11 @@ async function issue(email, family, origin, siteName) {
   // Count the send before awaiting it, so parallel requests cannot slip past the caps;
   // a failed send still counts, which keeps retries from hammering Resend.
   recordSend(email);
-  const token = create(email, family, origin);
+  const token = create(email, family, origin, returnTo);
   await send(email, `${origin}/signin#${token}`, siteName);
   console.log(`[MAGIC] Sent a ${family} sign-in link to ${email} for ${origin}`);
 }
 
 load();
 
-module.exports = { issue, consume, TOKEN_MINUTES };
+module.exports = { issue, consume, createHandoff, consumeHandoff, TOKEN_MINUTES };
