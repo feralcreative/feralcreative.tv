@@ -173,7 +173,15 @@ function renderAccess() {
         saveAccess();
       }),
     );
-    row.append(adminCell);
+    // 3d's NSFW models: off unless ticked, and always on for an admin.
+    const nsfwCell = document.createElement("td");
+    nsfwCell.append(
+      checkbox(`${entry.match}: 3D NSFW models`, entry.admin || entry.nsfw === true, (on) => {
+        entry.nsfw = on;
+        saveAccess();
+      }, entry.admin),
+    );
+    row.append(nsfwCell, adminCell);
     const removeCell = document.createElement("td");
     const remove = document.createElement("button");
     remove.type = "button";

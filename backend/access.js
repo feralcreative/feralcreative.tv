@@ -134,6 +134,14 @@ function resolve(email) {
   return { email: lower, admin, channels };
 }
 
+// Whether this address may see the 3d site's NSFW models: any matching entry with nsfw, or
+// an admin by any route. It goes only to the 3d server in /api/access/verify, never into a
+// session answer a browser reads, so no page can tell which viewers have it.
+function seesNsfw(email) {
+  const lower = email.toLowerCase();
+  return resolve(lower).admin || entries.some((entry) => entry.nsfw && matches(entry.match, lower));
+}
+
 // What an emailed link may grant this address, or null. Anyone the list gives a channel
 // qualifies, by an exact entry or an @domain. admin is always false here, whatever route
 // (owner list, an admin @domain, an admin entry) makes the address one, so a link can
@@ -390,6 +398,7 @@ function cleanEntries(input) {
     const channels = CHANNELS.filter((channel) => Array.isArray(entry.channels) && entry.channels.includes(channel));
     const admin = Boolean(entry.admin);
     const clean = { match, channels, admin };
+    if (entry.nsfw === true && !admin) clean.nsfw = true;
     const stored = entries.find((existing) => existing.match === match);
     if (stored && stored.google && entry.google !== null && !admin && !match.startsWith("@")) clean.google = stored.google;
     return clean;
@@ -588,7 +597,7 @@ function register(app) {
       // one arrives as a viewer, and can_admin tells 3d to offer signing in again.
       const recent = !session.link && !session.google && Date.now() - session.signedIn < ADMIN_HANDOFF_HOURS * 3600000;
       console.log(`[ACCESS] Signed in ${user.email} on ${origin} from the hub${user.admin && !recent ? " (as a viewer: hub sign-in is older than a day)" : ""}`);
-      return res.json({ ...user, admin: user.admin && recent, can_admin: user.admin, allowed: true });
+      return res.json({ ...user, admin: user.admin && recent, can_admin: user.admin, nsfw: seesNsfw(user.email), allowed: true });
     }
     if (req.body.magic_token !== undefined) {
       const channel = String(req.body.channel || "");
@@ -596,14 +605,14 @@ function register(app) {
       const link = channel === "3d" && origin ? magicLink.consume(req.body.magic_token, "3d", origin) : null;
       const user = link && resolveLink(link.email);
       if (!user) return res.status(401).json({ allowed: false, error: "This link has expired or was already used." });
-      return res.json({ ...user, allowed: user.channels.includes(channel) });
+      return res.json({ ...user, nsfw: seesNsfw(user.email), allowed: user.channels.includes(channel) });
     }
     try {
       const identity = await verifyGoogle(String(req.body.credential || ""));
       const channel = String(req.body.channel || "");
       // No access at all still answers with the Google address, so the 3d site can name it.
       const user = (resolveGoogleSignIn(identity) || { user: resolve(identity.email) }).user;
-      res.json({ ...user, allowed: user.admin || user.channels.includes(channel) });
+      res.json({ ...user, nsfw: seesNsfw(user.email), allowed: user.admin || user.channels.includes(channel) });
     } catch (error) {
       res.status(401).json({ allowed: false, error: "Invalid Google sign-in" });
     }
