@@ -67,7 +67,7 @@ The viewer polls `GET /api/feeds` every 15 seconds and shows the off-air slate o
 
 ## Access and sessions
 
-`backend/access.js` owns the access list (`/app/state/access.json`, host `data/backend-state/`, gitignored) and the session cookie. Each entry is `{ "match": "<email or @domain>", "channels": ["cats", "montclair", "3d"], "admin": bool, "google"?: { "sub", "email", "added" } }`; a viewer gets the union of every matching entry, admins get every channel, and `ADMIN_EMAILS` are always admins. On first boot the list is seeded from the old `config.js` allowlist.
+`backend/access.js` owns the access list (`/app/state/access.json`, host `data/backend-state/`, gitignored) and the session cookie. Each entry is `{ "match": "<email or @domain>", "channels": ["cats", "montclair", "3d"], "admin": bool, "nsfw"?: true, "google"?: { "sub", "email", "added" } }`; `nsfw` lets a non-admin see the 3d site's NSFW models, is edited in `/admin` (the 3D NSFW column), and is told only to the 3d server; a viewer gets the union of every matching entry, admins get every channel, and `ADMIN_EMAILS` are always admins. On first boot the list is seeded from the old `config.js` allowlist.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
@@ -78,7 +78,7 @@ The viewer polls `GET /api/feeds` every 15 seconds and shows the off-air slate o
 | GET, PUT | `/api/access` | Admin cookie | Read or replace the whole list `{ "entries": [...] }`; `google` appears as the address only, and a PUT can only remove it (`"google": null`) |
 | POST | `/api/handoff` | Cookie, hub only | `{ return, challenge }` as same-origin JSON → `{ url }`, the other site's `/signin#handoff=<code>`. 400 for a site not on the list, 403 without its channel |
 | POST | `/api/handoff/redeem` | Handoff code | Cats and Montclair: `{ code, verifier }` as same-origin JSON; sets this site's session cookie |
-| POST | `/api/access/verify` | Handoff code; or, until 3d moves over, a Google ID token or a 3d link token | For other sites (3d): `{ handoff_code, verifier, channel: "3d", origin }` → `{ email, admin, can_admin, channels, allowed }`. The older `{ credential, channel }` and `{ magic_token, channel: "3d" }` still answer; a link token never grants admin |
+| POST | `/api/access/verify` | Handoff code; or, until 3d moves over, a Google ID token or a 3d link token | For other sites (3d): `{ handoff_code, verifier, channel: "3d", origin }` → `{ email, admin, can_admin, nsfw, channels, allowed }`. `nsfw` is true for an admin or anyone a matching entry grants it; 3d copies it into its own session, so a change reaches a viewer at their next sign-in there, and no browser-facing answer carries it. The older `{ credential, channel }` and `{ magic_token, channel: "3d" }` still answer; a link token never grants admin |
 | POST | `/api/magic-link` | none | `{ email }` from a tv page, or `{ email, family: "3d", origin }` from the 3d proxy; always 202 with the same message, then emails a link if the address may use one |
 | POST | `/api/magic-link/redeem` | Link token | `{ token }` as JSON from the same origin the link was sent to; sets the session cookie marked as a link session, and answers with `return` when the link was asked for on the way to another site |
 | POST | `/api/magic-link/google` | Link-session cookie and a Google ID token | `{ credential }` as same-origin JSON; adds that Google account to the viewer's entry. 401 without a link session redeemed in the last 30 minutes, 409 if the entry or the Google account is already taken |
